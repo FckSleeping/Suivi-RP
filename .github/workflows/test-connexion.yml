@@ -1,0 +1,32 @@
+name: Test de connexion au forum
+
+on:
+  workflow_dispatch:   # se lance a la main, depuis l'onglet Actions
+    inputs:
+      topic:
+        description: "Chemin d'un sujet prive a tester, ex : /t176-blinding-light-x-fleur (facultatif)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dependances
+        run: pip install -r requirements.txt
+
+      - name: Tester la connexion
+        env:
+          FORUM_USER: ${{ secrets.FORUM_USER }}
+          FORUM_PASSWORD: ${{ secrets.FORUM_PASSWORD }}
+          TEST_TOPIC: ${{ github.event.inputs.topic }}
+        run: python scripts/check_connexion.py
