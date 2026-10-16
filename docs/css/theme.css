@@ -1,0 +1,161 @@
+/* ==========================================================================
+   THEME - c'est ICI que vous retravaillez l'apparence, librement.
+   1. Les variables ci-dessous reglent couleurs, polices, arrondis, espaces.
+   2. Plus bas : une section par element (menu, cartes, tableaux, etiquettes...).
+   Aucune de ces regles n'influence le fonctionnement de la page.
+   Pour une police Google : ajoutez en toute premiere ligne du fichier
+   @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap");
+   ========================================================================== */
+
+:root {
+  /* Couleurs */
+  --bg: #fbf6f1;
+  --surface: #ffffff;
+  --surface-alt: #f6eee7;
+  --text: #3a2f2b;
+  --muted: #8a7a72;
+  --border: #eadfd5;
+  --accent: #c8745a;
+  --accent-soft: #f6e1d9;
+  --accent-contrast: #ffffff;
+  --ok: #4f8a63;
+  --warn: #c0862b;
+  --danger: #b5483f;
+
+  /* Joueuses (une couleur par joueuse) */
+  --player-fcksleeping: #7a6fb0;
+  --player-chatondelalune: #3f8f8b;
+  --player-none: #9a8c84;
+
+  /* Typographie */
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-title: Georgia, "Times New Roman", serif;
+  --font-size: 16px;
+  --line-height: 1.5;
+
+  /* Formes et espaces */
+  --radius: 12px;
+  --radius-small: 8px;
+  --space: 1rem;
+  --space-small: 0.5rem;
+  --shadow: 0 1px 2px rgba(80, 50, 30, 0.06), 0 4px 14px rgba(80, 50, 30, 0.05);
+  --transition: 0.15s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1a19; --surface: #2a2423; --surface-alt: #332b29; --text: #f0e6e0; --muted: #a8998f;
+    --border: #433937; --accent: #e08f75; --accent-soft: #4a322b; --accent-contrast: #1e1a19;
+    --ok: #7fc096; --warn: #e0b060; --danger: #e87d73;
+    --player-fcksleeping: #a79be0; --player-chatondelalune: #6cc4bf;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ---------- Base ---------- */
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: var(--font-size); line-height: var(--line-height); }
+a { color: var(--accent); }
+code { background: var(--surface-alt); padding: 0.1em 0.4em; border-radius: 4px; }
+h1, h2, h3 { font-family: var(--font-title); line-height: 1.2; }
+.loading, .empty { color: var(--muted); }
+.hint, .sub { color: var(--muted); font-size: 0.875rem; }
+.error { color: var(--danger); }
+.count { color: var(--muted); font-size: 0.875rem; text-align: right; }
+
+/* ---------- En-tete et menu ---------- */
+.app-header { padding: var(--space) calc(var(--space) * 1.5); background: var(--surface); border-bottom: 1px solid var(--border); }
+.app-title { margin: 0; font-size: 1.4rem; color: var(--accent); }
+.nav-link { padding: 0.4rem 0.8rem; border-radius: 999px; color: var(--text); text-decoration: none; transition: background var(--transition), color var(--transition); }
+.nav-link:hover { background: var(--accent-soft); }
+.nav-link.active { background: var(--accent); color: var(--accent-contrast); }
+
+.app-main { padding: calc(var(--space) * 1.5) var(--space) calc(var(--space) * 4); }
+.page-title { margin: 0 0 var(--space); font-size: 1.6rem; }
+
+/* ---------- Barre « modifications non enregistrees » ---------- */
+.save-bar { padding: var(--space-small) calc(var(--space) * 1.5); background: var(--accent-soft); border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+
+/* ---------- Cartes ---------- */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--space) calc(var(--space) * 1.25); margin-bottom: var(--space); }
+.card-title { margin: 0 0 var(--space-small); font-size: 1.15rem; }
+
+/* ---------- Pastilles de chiffres (tableau de bord) ---------- */
+.tiles { gap: var(--space); margin-bottom: var(--space); }
+.tile { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space); box-shadow: var(--shadow); transition: transform var(--transition), border-color var(--transition); }
+.tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+.tile-n { font-family: var(--font-title); font-size: 2rem; line-height: 1; color: var(--accent); }
+.tile-l { color: var(--muted); font-size: 0.875rem; }
+
+/* ---------- Listes ---------- */
+.item { gap: var(--space-small) var(--space); padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.item:last-child { border-bottom: 0; }
+.item-title { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.item-meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.15rem; }
+.topic-link { color: var(--text); text-decoration-color: var(--border); text-underline-offset: 3px; }
+.topic-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+/* ---------- Etiquettes ---------- */
+.badge { display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--surface-alt); color: var(--muted); border: 1px solid var(--border); }
+.badge.new { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); animation: pulse 2.4s ease-in-out infinite; }
+.badge.flag { background: transparent; color: var(--warn); border-color: var(--warn); cursor: help; }
+.badge.ok { color: var(--ok); border-color: var(--ok); background: transparent; }
+.badge.status-en_cours { color: var(--ok); border-color: var(--ok); background: transparent; }
+.badge.status-termine { color: var(--muted); }
+.badge.status-archive { color: var(--muted); font-style: italic; }
+.badge.player-fcksleeping { color: var(--player-fcksleeping); border-color: var(--player-fcksleeping); background: transparent; }
+.badge.player-chatondelalune { color: var(--player-chatondelalune); border-color: var(--player-chatondelalune); background: transparent; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@media (prefers-reduced-motion: reduce) { .badge.new { animation: none; } .tile { transition: none; } }
+
+/* Personnages : une pastille coloree par joueuse */
+.chip { display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; font-size: 0.8rem; color: #fff; background: var(--player-none); }
+.chip.player-fcksleeping { background: var(--player-fcksleeping); }
+.chip.player-chatondelalune { background: var(--player-chatondelalune); }
+.chip-hint { opacity: 0.6; }
+
+/* ---------- Boutons ---------- */
+.btn { font: inherit; padding: 0.5rem 1rem; border-radius: var(--radius-small); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; transition: background var(--transition), border-color var(--transition); }
+.btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+.btn-small { padding: 0.25rem 0.65rem; font-size: 0.85rem; }
+
+/* ---------- Champs et filtres ---------- */
+.filters { gap: var(--space-small); margin-bottom: var(--space); }
+.field { margin-bottom: 0.9rem; }
+.field-label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.2rem; }
+.field-input { padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: var(--radius-small); background: var(--surface); color: var(--text); }
+.field-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.check-grid { gap: 0.3rem 1rem; margin-bottom: var(--space-small); }
+
+/* ---------- Tableaux ---------- */
+.table th { padding: 0.5rem 0.6rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; }
+.table th.sorted { color: var(--accent); }
+.table td { padding: 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.table tbody tr { transition: background var(--transition); }
+.table tbody tr:hover { background: var(--surface-alt); }
+.row-new td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.row-off { opacity: 0.55; }
+.cell-title { min-width: 220px; }
+.cell-date { white-space: nowrap; font-size: 0.9rem; }
+.cell-num { text-align: right; font-variant-numeric: tabular-nums; }
+.note { font-size: 0.85rem; color: var(--muted); font-style: italic; margin-top: 0.2rem; }
+
+/* ---------- Boite de dialogue ---------- */
+.dialog { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); padding: calc(var(--space) * 1.5); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); }
+.dialog::backdrop { background: rgba(40, 25, 20, 0.45); }
+.dialog-title { margin: 0 0 var(--space-small); }
+.dialog-sub { color: var(--muted); margin-top: 0; }
+.dialog-actions { margin-top: var(--space); }
+.flag-list { color: var(--warn); font-size: 0.9rem; }
+.details { margin-top: var(--space); }
+
+@media (max-width: 640px) {
+  .app-main { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .card { padding: var(--space); }
+}
+
+/* ---------- Petits ajustements ---------- */
+.badge { white-space: nowrap; }
+.cell-title .badge { margin-left: 0.35rem; }
+.th-btn { text-transform: inherit; letter-spacing: inherit; font-weight: inherit; }

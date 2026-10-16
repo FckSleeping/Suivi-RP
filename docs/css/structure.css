@@ -1,0 +1,41 @@
+/* Structure : ce qui fait fonctionner la page (mise en page, defilement, boites de dialogue).
+   Pour changer l'aspect, modifiez theme.css, pas ce fichier. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100vh; }
+[hidden] { display: none !important; }
+
+.app-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; }
+.nav { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.app-main { max-width: 1200px; margin: 0 auto; }
+
+.card { display: block; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.tile { display: flex; flex-direction: column; align-items: flex-start; cursor: pointer; font: inherit; text-align: left; }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+.item-main { flex: 1 1 320px; min-width: 0; }
+.item-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chars { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; }
+
+.filters { display: flex; flex-wrap: wrap; align-items: center; }
+.filters .field-input { flex: 1 1 160px; min-width: 0; }
+
+.table-wrap { overflow-x: auto; max-width: 100%; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; }
+.th-btn { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.cell-actions { white-space: nowrap; }
+
+.field { display: block; border: 0; padding: 0; margin: 0; min-width: 0; }
+.field-input { font: inherit; width: 100%; }
+.field-check { display: flex; align-items: center; gap: 0.5rem; }
+.field-check input { width: auto; flex: none; }
+.check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+
+.save-bar { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+
+.dialog { max-width: min(640px, calc(100vw - 2rem)); width: 100%; max-height: calc(100vh - 2rem); overflow: auto; }
+.dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+.details summary { cursor: pointer; }

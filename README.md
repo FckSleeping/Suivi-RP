@@ -13,6 +13,7 @@ Outil prive de suivi des RP du forum Sweeter Weather.
 - `data/manual.json` : VOS corrections (jamais ecrit par la synchro).
 - `data/status.json` : etat de la derniere synchro et erreurs.
 - `.github/workflows/test-connexion.yml` : lance le test de connexion a la demande.
+- `docs/` : la page web (etape 2) : `index.html`, `js/` (logique), `css/structure.css` (mise en page) et `css/theme.css` (VOTRE fichier d'apparence).
 - `.github/workflows/synchro.yml` : lance la synchro a la demande et enregistre les donnees.
 
 ## Identifiants
@@ -43,3 +44,18 @@ Priorite pour savoir si un sujet est un RP : choix manuel du sujet > regle manue
 ## Alertes (`flags`)
 `auteur_inconnu`, `date_illisible`, `creation_inconnue`, `un_seul_camp` (les personnages ne couvrent
 pas les deux joueuses), `erreur_lecture`, `jamais_lu`.
+
+## La page web (docs/)
+Seul le dossier `docs/` est destine a etre publie (GitHub Pages : Settings > Pages > « Deploy from a
+branch » > branche `main`, dossier `/docs` ; ou copie du contenu de `docs/` sur Archive-Host).
+Les donnees (`data/`) ne sont JAMAIS publiees : la page les lit dans le depot prive via l'API GitHub,
+avec un jeton propre a chaque appareil (page « Parametres » > « Comment creer le jeton ? »).
+
+Tester en local, sans jeton : a la racine du depot, `python -m http.server`, puis ouvrir
+`http://localhost:8000/docs/`.
+
+Pour l'instant, vos corrections s'enregistrent en telechargeant `manual.json` (bandeau en haut de la page)
+puis en remplacant `data/manual.json` dans le depot. L'enregistrement direct est l'etape 3.
+
+`manual.json` : en plus de ce qui precede, `forum_names` (`{numero_de_forum: nom}`) et `seen`
+(`{numero_de_sujet: dernier_message_vu}`), `topics[...].checked` (alerte validee), `topics[...].note`.
