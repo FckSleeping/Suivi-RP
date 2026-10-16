@@ -1,0 +1,11 @@
+{
+ "discovery_ran": true,
+ "errors": [],
+ "last_run": "2026-10-16T22:34:55Z",
+ "ok": true,
+ "schema": 1,
+ "topics_read": 69,
+ "topics_rp": 69,
+ "topics_total": 103,
+ "topics_with_new_reply": 0
+}
