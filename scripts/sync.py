@@ -317,12 +317,15 @@ def compute_flags(tid, t, store, manual):
 # Suggestions de remplacement (jamais appliquees automatiquement)
 # --------------------------------------------------------------------------- #
 def suggest_replacements(store, manual):
+    """Au plus UNE suggestion par duo de personnages : le sujet le plus recent (en cours)
+    remplace le sujet en cours qui le precede. Une fois ce remplacement accepte (l'ancien est
+    alors archive), la synchro suivante peut proposer le suivant de la chaine."""
     decided = manual.get("replacements", {})
     replaced = {k.split(">", 1)[1] for k, v in decided.items()
                 if v.get("decision") == "accepted" and ">" in k}
     groups = {}
     for tid, t in store["topics"].items():
-        if not is_rp_final(tid, t, manual) or status_of(tid, manual) == "archive" or tid in replaced:
+        if not is_rp_final(tid, t, manual) or status_of(tid, manual) != "en_cours" or tid in replaced:
             continue
         created = (t.get("created") or {}).get("date")
         chars = frozenset(effective_characters(tid, t, manual))
@@ -331,12 +334,14 @@ def suggest_replacements(store, manual):
     out = []
     for chars, items in groups.items():
         items.sort()
-        for (c_old, old), (c_new, new) in zip(items, items[1:]):
-            key = f"{new}>{old}"
-            if key in decided or c_new == c_old:
-                continue
-            out.append({"key": key, "new": new, "old": old, "characters": sorted(chars),
-                        "reason": "memes_personnages", "created_old": c_old, "created_new": c_new})
+        if len(items) < 2:
+            continue
+        (c_old, old), (c_new, new) = items[-2], items[-1]
+        key = f"{new}>{old}"
+        if key in decided or c_new == c_old:
+            continue
+        out.append({"key": key, "new": new, "old": old, "characters": sorted(chars),
+                    "reason": "memes_personnages", "created_old": c_old, "created_new": c_new})
     return sorted(out, key=lambda s: s["key"])
 
 
