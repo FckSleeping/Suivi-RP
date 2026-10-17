@@ -65,10 +65,9 @@
       if (!r.ok) throw new Error(`${n}.json : HTTP ${r.status}`);
       return r.json();
     };
-    const forum = await get("forum").catch(() => ({ topics: {} }));
-    const manual = await get("manual").catch(() => emptyManual());
-    const status = await get("status").catch(() => null);
-    return { forum, manual, status, source: "Fichiers locaux" };
+    const [forum, manual, status] = await Promise.all([get("forum").catch(() => null), get("manual").catch(() => null), get("status").catch(() => null)]);
+    if (!forum && !manual) throw new Error("Cette page n’est pas reliée à vos données. Remplissez le dépôt et le jeton ci-dessous (ou ouvrez le lien d’installation).");
+    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, source: "Fichiers locaux" };
   }
 
   async function fetchGitHub(s) {

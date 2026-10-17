@@ -15,6 +15,15 @@
       h("a", { class: "nav-link" + (k === current() ? " active" : ""), href: `#/${k}` }, label)));
   }
 
+  // Voyant de connexion : dit clairement si vos modifications seront enregistrees
+  function renderConn() {
+    const el = document.getElementById("conn");
+    const on = RP.canSave();
+    el.className = "conn " + (on ? "conn-on" : "conn-off");
+    el.textContent = on ? "Relié à GitHub" : "Non relié";
+    el.title = on ? "Vos modifications s’enregistrent automatiquement." : "Vos modifications ne sont PAS enregistrées : cliquez pour relier la page.";
+  }
+
   function renderBar() {
     const bar = document.getElementById("save-bar");
     const st = S.saveStatus;
@@ -53,6 +62,7 @@
 
   function renderPage() {
     renderNav();
+    renderConn();
     const root = document.getElementById("app");
     if (!S.forum) {
       root.replaceChildren(
@@ -67,6 +77,7 @@
   }
 
   RP.onChange(() => {
+    renderConn();
     renderBar();
     if (!RP.isSilent()) renderPage();
   });
