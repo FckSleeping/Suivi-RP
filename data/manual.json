@@ -118,7 +118,8 @@
   "c30": {
    "color": "darkred",
    "name": "Wade",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#e18e8e"
   },
   "c31": {
    "color": "#5C6BC0",
