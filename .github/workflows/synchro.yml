@@ -1,12 +1,11 @@
 name: Synchronisation du forum
 
-# Lancement a la demande uniquement (l'automatisation viendra a l'etape 3).
+# Lance toutes les 30 minutes, et a la demande (onglet Actions > Run workflow).
+# GitHub peut retarder un peu les lancements programmes : ce n'est pas une horloge precise.
 on:
+  schedule:
+    - cron: "*/30 * * * *"
   workflow_dispatch:
-    inputs:
-      decouverte:
-        description: "Chercher les nouveaux sujets (oui / non / auto)"
-        default: "oui"
 
 permissions:
   contents: write
@@ -18,6 +17,7 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,11 +28,13 @@ jobs:
         env:
           FORUM_USER: ${{ secrets.FORUM_USER }}
           FORUM_PASSWORD: ${{ secrets.FORUM_PASSWORD }}
-        run: python scripts/sync.py --discover "${{ github.event.inputs.decouverte }}"
+        run: python scripts/sync.py
       - name: Enregistrer les donnees
         run: |
           git config user.name "synchro-rp"
           git config user.email "synchro-rp@users.noreply.github.com"
           git add data/forum.json data/status.json
-          git diff --cached --quiet || git commit -m "Synchronisation du forum"
+          git diff --cached --quiet && exit 0
+          git commit -m "Synchronisation du forum"
+          git pull --rebase
           git push
