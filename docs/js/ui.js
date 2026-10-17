@@ -66,7 +66,12 @@
   // ------------------------------------------------------------------ composants
   function pill(c) {
     if (!c) return h("span", { class: "pill pill-empty" }, "—");
-    return h("span", { class: "pill" + (c.auto ? " pill-auto" : ""), style: `background:${c.color || "#999"};color:${RP.textColor(c.color)}`, title: c.auto ? "Reconnu d’après les messages du sujet" : "" }, c.name);
+    const t = pillStyle(c.color || "#999999");
+    return h("span", {
+      class: "pill pill-char" + (c.auto ? " pill-auto" : ""),
+      style: `--pill-a:${t.a};--pill-b:${t.b};--pill-text:${t.text};--pill-shadow:${t.shadow}`,
+      title: c.auto ? "Reconnu d’après les messages du sujet" : "",
+    }, c.name);
   }
   const turnPill = (key) => (key ? h("span", { class: `pill pill-turn player-${key}` }, RP.playerLabel(key)) : h("span", { class: "pill pill-empty" }, "-"));
   const titleLink = (x) => (x.url ? h("a", { class: "topic-link", href: x.url, target: "_blank", rel: "noopener noreferrer" }, x.title) : h("span", {}, x.title));
@@ -248,6 +253,19 @@
     const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))));
     return "#" + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, "0")).join("");
   };
+  // Pastille d'un personnage : degrade (couleur eclaircie -> couleur) et texte « ton sur ton ».
+  // Fond clair -> texte plus sombre ; fond fonce -> texte plus clair ; saturation reduite de moitie environ.
+  // Ex. lightgreen -> texte ~#72b972 ; darkred -> texte ~#c76262. Reglages : les 4 nombres ci-dessous.
+  const PILL = { mixWhite: 0.24, darker: 17, lighter: 33, satLight: 0.45, satDark: 0.5 };
+  function pillStyle(hex) {
+    const n = parseInt(hex.slice(1), 16), mix = (v) => Math.round(v + (255 - v) * PILL.mixWhite);
+    const a = "#" + [n >> 16, (n >> 8) & 255, n & 255].map((v) => mix(v).toString(16).padStart(2, "0")).join("");
+    const [hh, s, l] = hexToHsl(hex);
+    const light = l >= 50;
+    const text = light ? hslToHex(hh, Math.round(s * PILL.satLight), Math.max(l - PILL.darker, 20)) : hslToHex(hh, Math.round(s * PILL.satDark), Math.min(l + PILL.lighter, 85));
+    return { a, b: hex, text, shadow: light ? "0 1px 0 rgba(255,255,255,0.45)" : "0 1px 1px rgba(0,0,0,0.28)" };
+  }
+
   let activePicker = null;
   function closePicker() {
     if (!activePicker) return;
