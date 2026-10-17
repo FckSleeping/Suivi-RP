@@ -98,6 +98,11 @@ code { background: var(--glass); padding: 0.1em 0.45em; border-radius: 8px; }
 h1, h2, h3 { font-family: var(--font-title); letter-spacing: -0.02em; line-height: 1.2; }
 .loading, .empty { color: var(--muted); }
 .hint, .sub { color: var(--muted); font-size: 0.875rem; }
+.sub {
+    font-size: 0.8rem;
+    text-transform: lowercase;
+    font-style: italic;
+}
 .error { color: var(--danger); }
 .count { color: var(--muted); font-size: 0.875rem; text-align: right; }
 
@@ -178,7 +183,7 @@ h1, h2, h3 { font-family: var(--font-title); letter-spacing: -0.02em; line-heigh
 @media (prefers-reduced-motion: reduce) { .badge.new { animation: none; } .tile, .btn, .nav-link, .table tbody tr { transition: none; } }
 
 /* Pastilles de personnages et d'etat (tracker) */
-.pill { display: inline-block; min-width: 6.5rem; padding: 0.18rem 0.9rem; border-radius: 999px; text-align: center; font-size: 0.85rem; font-weight: 650; white-space: nowrap; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 6px rgba(40, 30, 90, 0.16); }
+.pill { display: inline-block; min-width: 6.5rem; padding: 10px 0px;border-radius: 15px; text-align: center; font-size: 0.85rem; font-weight: 650; white-space: nowrap; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 6px rgba(40, 30, 90, 0.16); }
 .pill-empty { background: var(--glass); color: var(--muted); font-weight: 400; box-shadow: var(--specular); }
 .pill-auto { font-style: italic; opacity: 0.88; }
 .pill-turn { color: #fff; min-width: 5rem; }
@@ -322,3 +327,5 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .picker-range::-moz-range-thumb { width: 1.3rem; height: 1.3rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #f1efff); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 2px 8px rgba(40, 30, 90, 0.35); }
 .picker-pop { background: rgba(255, 255, 255, 0.9); }
 :root[data-theme="dark"] .picker-pop { background: rgba(36, 34, 52, 0.92); }
+
+.count, .page-title{display: none;}
