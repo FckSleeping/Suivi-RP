@@ -1,9 +1,9 @@
 {
  "errors": [],
- "last_run": "2026-10-17T10:37:20Z",
+ "last_run": "2026-10-17T11:01:01Z",
  "ok": true,
  "schema": 2,
- "topics_read": 4,
- "topics_total": 4,
+ "topics_read": 20,
+ "topics_total": 20,
  "topics_with_new_reply": 0
 }
