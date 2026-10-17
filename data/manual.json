@@ -3,117 +3,140 @@
   "c1": {
    "color": "#b95bb3",
    "name": "Felicy",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#6f4d6d"
   },
   "c10": {
    "color": "#74b0cd",
    "name": "Charleen",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#5d7e8e"
   },
   "c11": {
    "color": "#4d58b5",
    "name": "Maeve",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#474a66"
   },
   "c12": {
    "color": "#538b95",
    "name": "Maïween",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#bfcccf"
   },
   "c13": {
    "color": "#892b82",
    "name": "Janko",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#c398c0"
   },
   "c14": {
    "color": "#ab2f2f",
    "name": "Kavish",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#d4b0b0"
   },
   "c15": {
    "color": "#AB2424",
    "name": "Rhysand",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#d3a7a7"
   },
   "c16": {
    "color": "#90BFD1",
    "name": "Bélial",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#6f8e9b"
   },
   "c17": {
    "color": "#9fc5e8",
    "name": "Milton",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#7d9ab5"
   },
   "c18": {
    "color": "#BA0F4A",
    "name": "Elowen",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#d699ae"
   },
   "c19": {
    "color": "#e7b988",
    "name": "Mallorie",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#af8d6a"
   },
   "c2": {
    "color": "#A36ECF",
    "name": "Helios",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#75588d"
   },
   "c20": {
    "color": "#89bfd3",
    "name": "Noel",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#688e9c"
   },
   "c21": {
    "color": "lightcoral",
    "name": "Léo",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#545454"
   },
   "c22": {
    "color": "lightgreen",
    "name": "Apolonia",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#545454"
   },
   "c23": {
    "color": "skyblue",
    "name": "Arsène",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#545454"
   },
   "c24": {
    "color": "#C74C7D",
    "name": "Sonny",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#74495a"
   },
   "c25": {
    "color": "#9fcfbf",
    "name": "Abell",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#7b9d92"
   },
   "c26": {
    "color": "crimson",
    "name": "Jewell",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#545454"
   },
   "c27": {
    "color": "#FF7969",
    "name": "Angel",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#be5f55"
   },
   "c28": {
    "color": "#9270fc",
    "name": "Sadie",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#7057bc"
   },
   "c29": {
    "color": "#850035",
    "name": "Miranda",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#cb628c"
   },
   "c3": {
    "color": "#AF96E1",
    "name": "Narcisse",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#8876ad"
   },
   "c30": {
    "color": "darkred",
@@ -124,77 +147,92 @@
   "c31": {
    "color": "#5C6BC0",
    "name": "Rome",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#505677"
   },
   "c32": {
    "color": "#ff4381",
    "name": "Vermeille",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#aa4164"
   },
   "c33": {
    "color": "#e5bbd4",
    "name": "Opal",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#b894a9"
   },
   "c34": {
    "color": "#ea6800",
    "name": "Keith",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#e4c7af"
   },
   "c35": {
    "color": "#DA002F",
    "name": "Seven",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#e0a3b0"
   },
   "c36": {
    "color": "#c272ca",
    "name": "Edwige",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#865c8a"
   },
   "c37": {
    "color": "#3c00d7",
    "name": "Whiskey",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#b19fdf"
   },
   "c38": {
    "color": "#d48cc1",
    "name": "Yuna",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#9e6b91"
   },
   "c39": {
    "color": "#442d8a",
    "name": "Paris",
-   "player": "fcksleeping"
+   "player": "fcksleeping",
+   "text_color": "#a69bc5"
   },
   "c4": {
    "color": "#626FC4",
    "name": "Thétis",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#54597d"
   },
   "c5": {
    "color": "#4BBFA4",
    "name": "Octavia",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#466d64"
   },
   "c6": {
    "color": "#4a86e8",
    "name": "Félix",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#476594"
   },
   "c7": {
    "color": "#73b3d8",
    "name": "Lupo",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#5c8399"
   },
   "c8": {
    "color": "#ccaee3",
    "name": "Asmodée",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#a189b3"
   },
   "c9": {
    "color": "#ee952a",
    "name": "Cody",
-   "player": "chatondelalune"
+   "player": "chatondelalune",
+   "text_color": "#86653c"
   }
  },
  "schema": 2,
