@@ -20,6 +20,7 @@ import json
 import os
 import re
 import sys
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -86,6 +87,65 @@ def write_status(path, status):
     return write_json(path, status)
 
 
+# --------------------------------------------------------------------------- #
+# Couleurs de paroles (les dialogues sont colores par personnage)
+# --------------------------------------------------------------------------- #
+COLOR_SELECTORS = ["quote", ".vrmtart > span", ".kitto > span"]
+STYLE_COLOR_RE = re.compile(r"(?:^|;)\s*color\s*:\s*([^;!]+)", re.I)
+NAMED_COLORS = {
+    "black": "#000000", "white": "#ffffff", "red": "#ff0000", "green": "#008000", "blue": "#0000ff",
+    "yellow": "#ffff00", "orange": "#ffa500", "purple": "#800080", "pink": "#ffc0cb", "brown": "#a52a2a",
+    "gray": "#808080", "grey": "#808080", "silver": "#c0c0c0", "gold": "#ffd700", "cyan": "#00ffff",
+    "aqua": "#00ffff", "magenta": "#ff00ff", "fuchsia": "#ff00ff", "lime": "#00ff00", "navy": "#000080",
+    "teal": "#008080", "olive": "#808000", "maroon": "#800000", "violet": "#ee82ee", "indigo": "#4b0082",
+    "crimson": "#dc143c", "coral": "#ff7f50", "salmon": "#fa8072", "turquoise": "#40e0d0", "lavender": "#e6e6fa",
+    "beige": "#f5f5dc", "khaki": "#f0e68c", "tomato": "#ff6347", "orchid": "#da70d6", "plum": "#dda0dd",
+    "skyblue": "#87ceeb", "royalblue": "#4169e1", "darkred": "#8b0000", "darkblue": "#00008b",
+    "darkgreen": "#006400", "hotpink": "#ff69b4", "deeppink": "#ff1493", "chocolate": "#d2691e",
+    "sienna": "#a0522d", "tan": "#d2b48c", "slateblue": "#6a5acd", "seagreen": "#2e8b57",
+}
+
+
+def to_hex(value):
+    """'#F0A', 'rgb(1,2,3)' ou 'red' -> '#rrggbb' (None si on ne comprend pas)."""
+    v = (value or "").strip().lower()
+    m = re.fullmatch(r"#([0-9a-f]{3})", v)
+    if m:
+        return "#" + "".join(c * 2 for c in m.group(1))
+    if re.fullmatch(r"#[0-9a-f]{6}", v):
+        return v
+    m = re.fullmatch(r"rgba?\(\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*(?:[,/][^)]*)?\)", v)
+    if m and all(int(x) <= 255 for x in m.groups()):
+        return "#%02x%02x%02x" % tuple(int(x) for x in m.groups())
+    return NAMED_COLORS.get(v)
+
+
+def element_color(el):
+    """Couleur d'un element : son style color, ou celle du premier span/font colore a l'interieur."""
+    for node in [el] + el.find_all(["span", "font"]):
+        m = STYLE_COLOR_RE.search(node.get("style") or "")
+        c = to_hex(m.group(1)) if m else to_hex(node.get("color"))
+        if c:
+            return c
+    return None
+
+
+def post_colors(soup, post_id):
+    """Couleurs de paroles trouvees dans un message (hors citations « blockquote » d'autres membres)."""
+    box = soup.find(id=f"p{post_id}")
+    if box is None:
+        return []
+    found = []
+    for sel in COLOR_SELECTORS:
+        for el in box.select(sel):
+            if el.find_parent("blockquote"):
+                continue
+            c = element_color(el)
+            if c:
+                found.append(c)
+    return found
+
+
 def topic_id(url):
     m = re.search(r"/t(\d+)", url or "")
     return m.group(1) if m else None
@@ -110,7 +170,8 @@ def read_topic(forum, tid, t):
     """Lit la derniere page (et la premiere si la creation est inconnue). Modifie t."""
     path = t["path"] if not t.get("created") else (t.get("last_page_path") or t["path"])
     first, retried = None, False
-    authors = {a["uid"]: a for a in t.get("authors", [])}
+    authors = {a["uid"]: dict(a) for a in t.get("authors", [])}
+    counts = {}  # uid -> couleurs vues dans les pages lues cette fois-ci
     for _ in range(8):
         r, soup = forum.soup(path)
         if r.status_code != 200:
@@ -122,7 +183,10 @@ def read_topic(forum, tid, t):
         for post in posts:
             a = post["author"]
             if a and a["group"] in PLAYERS:
-                authors[a["uid"]] = {"uid": a["uid"], "name": a["name"], "group": a["group"]}
+                entry = authors.setdefault(a["uid"], {})  # conserve la couleur deja connue
+                entry.update({"uid": a["uid"], "name": a["name"], "group": a["group"]})
+                for c in post_colors(soup, post["post_id"]):
+                    counts.setdefault(a["uid"], Counter())[c] += 1
         m = re.search(rf"/t{tid}p(\d+)-", path)
         cur = int(m.group(1)) if m else 0
         offs = {}
@@ -147,6 +211,8 @@ def read_topic(forum, tid, t):
     t["last_post"] = slim_post(posts[-1])
     t["post_count"] = cur + len(posts)
     t["last_page_path"] = path
+    for uid, cnt in counts.items():
+        authors[uid]["color"] = cnt.most_common(1)[0][0]
     t["authors"] = sorted(authors.values(), key=lambda a: a["uid"])
 
 

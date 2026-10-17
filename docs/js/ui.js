@@ -24,7 +24,28 @@
     if (value !== undefined) el.value = value;
     return el;
   }
-  const btn = (label, onclick, cls = "") => h("button", { type: "button", class: `btn ${cls}`.trim(), onclick }, label);
+  // Icones (traits arrondis, couleur = celle du texte). Ajoutez-en ici si besoin.
+  const ICONS = {
+    pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/>',
+    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14a6.5 6.5 0 0 1 3.5 6"/>',
+    settings: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  };
+  function icon(name) {
+    const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "icon"); s.setAttribute("aria-hidden", "true");
+    s.innerHTML = ICONS[name] || ""; // textes fixes ci-dessus : aucun contenu du forum
+    return s;
+  }
+  RP.icon = icon;
+  const btn = (label, onclick, cls = "", ic = "") => h("button", { type: "button", class: `btn ${cls}`.trim(), onclick }, ic ? icon(ic) : null, ic ? h("span", {}, label) : label);
+  const iconBtn = (ic, label, onclick, cls = "") => h("button", { type: "button", class: `btn btn-icon ${cls}`.trim(), onclick, title: label, "aria-label": label }, icon(ic));
   const badge = (text, cls = "", title = "") => h("span", { class: `badge ${cls}`.trim(), title }, text);
   const empty = (text) => h("p", { class: "empty" }, text);
   const section = (title, ...kids) => h("section", { class: "card" }, h("h2", { class: "card-title" }, title), ...kids);
@@ -84,7 +105,7 @@
         tile(unseen.length, "Nouvelles réponses", {}),
         tile(flagged.length, "À vérifier", {})),
       section("Nouvelles réponses",
-        unseen.length ? h("ul", { class: "list" }, unseen.map((x) => item(x, btn("Marquer comme vu", () => RP.markSeen([x.id]), "btn-small")))) : empty("Rien de nouveau depuis votre dernière visite."),
+        unseen.length ? h("ul", { class: "list" }, unseen.map((x) => item(x, btn("Marquer comme vu", () => RP.markSeen([x.id]), "btn-small", "check")))) : empty("Rien de nouveau depuis votre dernière visite."),
         unseen.length > 1 ? btn("Tout marquer comme vu", () => RP.markSeen(unseen.map((x) => x.id)), "btn-small") : null),
       section("Activité récente", h("ul", { class: "list" }, [...rows].filter((x) => x.last).sort(RP.byRecent).slice(0, 10).map((x) => item(x)))),
       flagged.length ? section("À vérifier",
@@ -107,7 +128,7 @@
         h("option", { value: "" }, "Tous les états"), RP.players.map((p) => h("option", { value: p.key }, `Au tour de ${p.label}`))),
       h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.nsfw, onchange: (e) => { f.nsfw = e.target.checked; draw(); } }), h("span", {}, "NSFW")),
       h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.done, onchange: (e) => { f.done = e.target.checked; draw(); } }), h("span", {}, "Voir les terminés")),
-      btn("Ajouter un RP", () => topicDialog(), "btn-primary"));
+      btn("Ajouter un RP", () => topicDialog(), "btn-primary", "plus"));
 
     const sortKey = {
       order: (x) => x.order, title: (x) => norm(x.title), turn: (x) => x.turn || "~", last: (x) => RP.ms(x.last) || 0,
@@ -138,13 +159,13 @@
                 h("td", { class: "cell-title" }, h("strong", {}, x.title), x.unseen ? badge("Nouveau", "new") : null, flagBadges(x), x.done ? badge("Terminé") : null,
                   x.note ? h("div", { class: "note" }, x.note) : null, h("div", { class: "sub" }, x.last ? lastLine(x) : "")),
                 RP.players.map((p) => h("td", {}, pill(x.chars[p.key]))),
-                h("td", { class: "cell-link" }, x.url ? h("a", { href: x.url, target: "_blank", rel: "noopener noreferrer", title: "Ouvrir le sujet" }, "www") : ""),
+                h("td", { class: "cell-link" }, x.url ? h("a", { class: "icon-link", href: x.url, target: "_blank", rel: "noopener noreferrer", title: "Ouvrir le sujet", "aria-label": "Ouvrir le sujet" }, icon("link")) : ""),
                 h("td", {}, turnPill(x.turn)),
                 h("td", { class: "cell-nsfw" }, x.nsfw ? "♥" : ""),
                 h("td", { class: "cell-actions" },
-                  x.unseen ? btn("Vu", () => RP.markSeen([x.id]), "btn-small") : null,
-                  btn("Modifier", () => topicDialog(x.id), "btn-small"),
-                  btn("Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")))))
+                  x.unseen ? iconBtn("check", "Marquer comme vu", () => RP.markSeen([x.id]), "btn-small") : null,
+                  iconBtn("pencil", "Modifier", () => topicDialog(x.id), "btn-small"),
+                  iconBtn("trash", "Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")))))
             )
           : empty(RP.rows().length ? "Aucun RP ne correspond à ces filtres." : "Aucun RP pour l’instant : cliquez sur « Ajouter un RP »."),
         h("p", { class: "count" }, `${items.length} RP`));
@@ -209,6 +230,89 @@
         }, "btn-primary"))));
   }
 
+  // ------------------------------------------------------------------ selecteur de couleur (verre liquide)
+  const hexToHsl = (hex) => {
+    const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    let hh = 0, s = 0;
+    if (d) {
+      s = d / (1 - Math.abs(2 * l - 1));
+      hh = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      hh = (hh * 60 + 360) % 360;
+    }
+    return [Math.round(hh), Math.round(s * 100), Math.round(l * 100)];
+  };
+  const hslToHex = (hh, s, l) => {
+    s /= 100; l /= 100;
+    const k = (n) => (n + hh / 30) % 12, a = s * Math.min(l, 1 - l);
+    const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))));
+    return "#" + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, "0")).join("");
+  };
+  let activePicker = null;
+  function closePicker() {
+    if (!activePicker) return;
+    activePicker.pop.remove();
+    ["pointerdown", "keydown", "scroll", "resize"].forEach((ev) => window.removeEventListener(ev, activePicker.on, true));
+    activePicker = null;
+  }
+
+  function colorPicker(c) {
+    let color = c.effColor;
+    const swatch = h("button", { type: "button", class: "swatch", style: `--c:${color}`, title: "Changer la couleur", "aria-label": "Changer la couleur" });
+    swatch.addEventListener("click", () => { if (activePicker && activePicker.owner === swatch) closePicker(); else open(); });
+
+    function open() {
+      closePicker();
+      let [H, S, L] = hexToHsl(color);
+      const hex = h("input", { class: "field-input picker-hex", type: "text", value: color, maxlength: 7, "aria-label": "Code couleur" });
+      const mk = (label, max, val, onSet) => {
+        const el = h("input", { type: "range", class: "picker-range", min: 0, max, value: val, "aria-label": label });
+        el.addEventListener("input", () => { onSet(+el.value); set(hslToHex(H, S, L), false); });
+        return el;
+      };
+      const sH = mk("Teinte", 360, H, (v) => (H = v));
+      const sS = mk("Saturation", 100, S, (v) => (S = v));
+      const sL = mk("Luminosité", 100, L, (v) => (L = v));
+      sH.style.background = "linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)";
+      const tracks = () => {
+        sS.style.background = `linear-gradient(to right,hsl(${H},0%,${L}%),hsl(${H},100%,${L}%))`;
+        sL.style.background = `linear-gradient(to right,#000,hsl(${H},${S}%,50%),#fff)`;
+      };
+      // fromPalette : on replace les curseurs sur la couleur choisie
+      function set(hx, fromPalette) {
+        color = hx; swatch.style.setProperty("--c", hx); hex.value = hx;
+        if (fromPalette) { [H, S, L] = hexToHsl(hx); sH.value = H; sS.value = S; sL.value = L; }
+        tracks();
+        RP.setChar(c.id, { color: hx }, false);
+      }
+      hex.addEventListener("change", () => {
+        const v = hex.value.trim().replace(/^#?/, "#").toLowerCase();
+        if (/^#[0-9a-f]{6}$/.test(v)) set(v, true); else hex.value = color;
+      });
+      const pop = h("div", { class: "picker-pop", role: "dialog", "aria-label": "Choisir une couleur" },
+        h("div", { class: "picker-grid" }, C.palette.map((col) => h("button", { type: "button", class: "swatch swatch-mini", style: `--c:${col}`, title: col, "aria-label": col, onclick: () => set(col, true) }))),
+        h("div", { class: "picker-sliders" }, sH, sS, sL),
+        h("div", { class: "picker-foot" }, hex,
+          c.autoColor ? btn("Couleur du forum", () => { closePicker(); RP.setChar(c.id, { color: null }); }, "btn-small", "refresh") : null));
+      document.body.append(pop);
+      tracks();
+
+      const r = swatch.getBoundingClientRect(), w = pop.offsetWidth, ht = pop.offsetHeight;
+      pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
+      pop.style.top = `${r.bottom + 8 + ht > window.innerHeight ? Math.max(8, r.top - ht - 8) : r.bottom + 8}px`;
+
+      const on = (e) => {
+        if (e.type === "keydown") { if (e.key === "Escape") closePicker(); return; }
+        if (e.type === "pointerdown" && (pop.contains(e.target) || swatch.contains(e.target))) return;
+        if (e.type === "scroll" && pop.contains(e.target)) return;
+        closePicker();
+      };
+      activePicker = { pop, on, owner: swatch };
+      ["pointerdown", "keydown", "scroll", "resize"].forEach((ev) => window.addEventListener(ev, on, true));
+    }
+    return swatch;
+  }
+
   // ------------------------------------------------------------------ PERSONNAGES
   function charactersView() {
     const names = h("textarea", { class: "field-input", rows: 3, placeholder: "Un ou plusieurs noms, séparés par des virgules ou des retours à la ligne" });
@@ -222,8 +326,9 @@
         btn("Ajouter", () => {
           const list = names.value.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
           if (list.length) RP.addCharacters(list, player.value);
-        }, "btn-primary")),
-      h("p", { class: "hint" }, "Une couleur est choisie pour chacun ; vous pouvez la changer ensuite."));
+        }, "btn-primary", "plus")),
+      h("p", { class: "hint" }, "La couleur est relevée automatiquement dans les messages du forum (dialogues colorés) quand le nom du personnage est celui de son compte ; sinon une couleur par défaut est choisie. Cliquez sur la pastille pour la changer."),
+      btn("Reprendre les couleurs du forum", confirmResetColors, "btn-small", "refresh"));
 
     const block = (p) => {
       const list = RP.charsOf(p.key);
@@ -231,12 +336,18 @@
         list.length ? h("div", { class: "table-wrap" }, h("table", { class: "table" },
           h("thead", {}, h("tr", {}, ["Couleur", "Nom", "RP", ""].map((t) => h("th", {}, t)))),
           h("tbody", {}, list.map((c) => h("tr", {},
-            h("td", {}, h("input", { type: "color", class: "color-input", value: c.color || "#999999", "aria-label": "Couleur", onchange: (e) => RP.setChar(c.id, { color: e.target.value }) })),
+            h("td", { class: "cell-color" }, colorPicker(c), h("span", { class: "sub" }, c.color ? "" : c.autoColor ? "forum" : "défaut")),
             h("td", {}, h("input", { class: "field-input", type: "text", value: c.name, "aria-label": "Nom", onchange: (e) => { const v = e.target.value.trim(); if (v) RP.setChar(c.id, { name: v }); else e.target.value = c.name; } })),
             h("td", { class: "cell-num" }, used[c.id] || 0),
-            h("td", { class: "cell-actions" }, btn("Supprimer", () => confirmDeleteChar(c, used[c.id] || 0), "btn-small btn-danger"))))))) : empty("Aucun personnage."));
+            h("td", { class: "cell-actions" }, iconBtn("trash", "Supprimer", () => confirmDeleteChar(c, used[c.id] || 0), "btn-small btn-danger"))))))) : empty("Aucun personnage."));
     };
     return [h("h2", { class: "page-title" }, "Personnages"), add, RP.players.map(block)];
+  }
+
+  function confirmResetColors() {
+    openDialog("Reprendre les couleurs du forum ?", h("div", {},
+      h("p", {}, "Les couleurs choisies à la main seront remplacées par celles relevées sur le forum, pour tous les personnages où le forum en donne une."),
+      h("div", { class: "dialog-actions" }, btn("Annuler", closeDialog), btn("Remplacer", () => { closeDialog(); RP.resetColors(); }, "btn-primary"))));
   }
 
   function confirmDeleteChar(c, n) {

@@ -14,7 +14,8 @@ window.RP_CONFIG = {
     { key: "fcksleeping",    group: "4", label: "Ambre" },
   ],
 
-  // Couleurs proposees aux nouveaux personnages (modifiables ensuite une par une)
-  palette: ["#e57373", "#f4a261", "#e9c46a", "#81c784", "#4db6ac", "#64b5f6", "#7986cb", "#ba68c8", "#f06292", "#a1887f", "#90a4ae", "#ff8a65"],
+  // Couleurs proposees dans le selecteur (et utilisees quand le forum n'en donne aucune)
+  palette: ["#ff6b6b", "#ff8e5e", "#ffb84d", "#f2d043", "#9bdc5f", "#4fd1a1", "#3cc8d9", "#4da3ff",
+            "#7a86ff", "#a77bff", "#d46bff", "#ff6bc1", "#f4a1c4", "#c9a27a", "#8d99ae", "#3d3d4e"],
   recentDays: 7,
 };
