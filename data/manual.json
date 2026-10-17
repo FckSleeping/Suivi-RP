@@ -236,7 +236,9 @@
   }
  },
  "schema": 2,
- "seen": {},
+ "seen": {
+  "rmvc9nulgau": "2160"
+ },
  "topics": {
   "r1": {
    "chars": {
