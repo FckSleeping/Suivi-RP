@@ -34,6 +34,23 @@ Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont dans
 - Si le personnage n'est pas choisi, la page le reconnait d'apres les comptes qui ont ecrit dans le sujet
   (affiche en italique), a condition que le nom du personnage soit celui du compte.
 
+## Couleurs des personnages
+La synchro releve la couleur des dialogues dans les messages (elements `quote`, `.vrmtart > span`, `.kitto > span`,
+hors citations `blockquote`) et la rattache au compte qui a ecrit. Une couleur est donc proposee pour tout
+personnage dont le nom est celui de son compte. Choisir une couleur a la main (pastille sur la page Personnages)
+l'emporte toujours ; le bouton « Couleur du forum » revient a la couleur relevee. Pour ajouter un autre
+repere de couleur, modifier `COLOR_SELECTORS` dans `scripts/sync.py`.
+
+## Couleur du texte des pastilles de personnages
+Dans `data/manual.json`, chaque personnage peut avoir un champ `text_color` : la couleur du texte de sa pastille
+(les pastilles d'etat « Fanny » / « Ambre » ne sont pas concernees). Exemple :
+
+    "c1": { "name": "Felicy", "player": "chatondelalune", "color": "#f4a1c4", "text_color": "#7a1244" }
+
+Formats acceptes : `#rrggbb` ou `#rgb`. Sans `text_color` (ou si la valeur est invalide), le texte est calcule
+automatiquement : meme teinte que le fond, en plus clair ou plus fonce (reglage `pillText` dans `docs/js/config.js` :
+`"tone"` ou `"contrast"` pour noir/blanc). On peut aussi la choisir sur la page Personnages (colonne « Texte »).
+
 ## Lancer la synchro
 Onglet Actions > « Synchronisation du forum » > Run workflow.
 En local : `python scripts/sync.py` (avec `FORUM_USER` / `FORUM_PASSWORD` dans l'environnement).
@@ -59,7 +76,8 @@ ou de telecharger une copie de `manual.json`. Sans jeton, la page garde le mode 
 Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit au plus 30 minutes apres.
 
 ## Format de manual.json
-- `characters` : `{id: {name, player, color}}` (`player` = compte forum de la joueuse)
+- `characters` : `{id: {name, player, color, text_color}}` (`player` = compte forum de la joueuse ; `color` facultative :
+  sans elle, la couleur est relevee sur le forum, voir ci-dessous)
 - `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, status ("termine"),
   turn (compte, ou "none"), note}}`
 - `seen` : `{id_rp: dernier_message_vu}` (pour le badge « Nouveau »)
