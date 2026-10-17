@@ -45,8 +45,8 @@
   --player-none: #9a96ad;
 
   /* Typographie */
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
-  --font-title: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-body: inter;
+  --font-title: inter;
   --font-size: 16px;
   --line-height: 1.5;
 
@@ -77,7 +77,7 @@
   --glass-line: rgba(255, 255, 255, 0.09);
   --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   --specular: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --player-fcksleeping: #c02971; --player-chatondelalune: #b585ed;
+  --player-fcksleeping: #e68fd7; --player-chatondelalune: #a591f0;
 }
 
 /* ---------- Base ---------- */
@@ -98,6 +98,11 @@ code { background: var(--glass); padding: 0.1em 0.45em; border-radius: 8px; }
 h1, h2, h3 { font-family: var(--font-title); letter-spacing: -0.02em; line-height: 1.2; }
 .loading, .empty { color: var(--muted); }
 .hint, .sub { color: var(--muted); font-size: 0.875rem; }
+.sub {
+    font-size: 0.8rem;
+    text-transform: lowercase;
+    font-style: italic;
+}
 .error { color: var(--danger); }
 .count { color: var(--muted); font-size: 0.875rem; text-align: right; }
 
@@ -178,7 +183,7 @@ h1, h2, h3 { font-family: var(--font-title); letter-spacing: -0.02em; line-heigh
 @media (prefers-reduced-motion: reduce) { .badge.new { animation: none; } .tile, .btn, .nav-link, .table tbody tr { transition: none; } }
 
 /* Pastilles de personnages et d'etat (tracker) */
-.pill { display: inline-block; min-width: 6.5rem; padding: 0.18rem 0.9rem; border-radius: 999px; text-align: center; font-size: 0.85rem; font-weight: 650; white-space: nowrap; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 6px rgba(40, 30, 90, 0.16); }
+.pill { display: inline-block; min-width: 6.5rem; padding: 10px 0px;border-radius: 15px; text-align: center; font-size: 0.85rem; font-weight: 650; white-space: nowrap; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 6px rgba(40, 30, 90, 0.16); }
 .pill-empty { background: var(--glass); color: var(--muted); font-weight: 400; box-shadow: var(--specular); }
 .pill-auto { font-style: italic; opacity: 0.88; }
 .pill-turn { color: #fff; min-width: 5rem; }
@@ -323,7 +328,4 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .picker-pop { background: rgba(255, 255, 255, 0.9); }
 :root[data-theme="dark"] .picker-pop { background: rgba(36, 34, 52, 0.92); }
 
-/* ---------- Pastilles de personnages : degrade + texte ton sur ton (valeurs calculees par la page) ----------
-   --pill-a : couleur eclaircie (haut gauche)   --pill-b : couleur du personnage (bas droite)
-   --pill-text : texte plus sombre/clair de la meme teinte   --pill-shadow : petit relief du texte */
-.pill-char { background: linear-gradient(135deg, var(--pill-a), var(--pill-b)); color: var(--pill-text); text-shadow: var(--pill-shadow); }
+.count, .page-title{display: none;}
