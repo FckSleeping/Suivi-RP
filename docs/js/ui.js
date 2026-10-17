@@ -66,7 +66,12 @@
   // ------------------------------------------------------------------ composants
   function pill(c) {
     if (!c) return h("span", { class: "pill pill-empty" }, "—");
-    return h("span", { class: "pill" + (c.auto ? " pill-auto" : ""), style: `background:${c.color || "#999"};color:${RP.textColor(c.color)}`, title: c.auto ? "Reconnu d’après les messages du sujet" : "" }, c.name);
+    const bg = c.color || "#999999", t = pillText(bg, c.text_color);
+    return h("span", {
+      class: "pill pill-char" + (c.auto ? " pill-auto" : ""),
+      style: `--pill-bg:${bg};--pill-text:${t.text};--pill-shadow:${t.shadow}`,
+      title: c.auto ? "Reconnu d’après les messages du sujet" : "",
+    }, c.name);
   }
   const turnPill = (key) => (key ? h("span", { class: `pill pill-turn player-${key}` }, RP.playerLabel(key)) : h("span", { class: "pill pill-empty" }, "-"));
   const titleLink = (x) => (x.url ? h("a", { class: "topic-link", href: x.url, target: "_blank", rel: "noopener noreferrer" }, x.title) : h("span", {}, x.title));
@@ -248,6 +253,20 @@
     const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))));
     return "#" + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, "0")).join("");
   };
+  // Couleur du texte d'une pastille de personnage :
+  //  1. « text_color » du personnage dans manual.json (ou choisie sur la page Personnages), si elle existe ;
+  //  2. sinon, selon RP_CONFIG.pillText : "tone" = meme teinte que le fond, plus claire ou plus sombre
+  //     (lightgreen -> ~#72b972, darkred -> ~#c76262) ; "contrast" = noir ou blanc.
+  const PILL = { darker: 17, lighter: 33, satLight: 0.45, satDark: 0.5 };
+  function pillText(bg, custom) {
+    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((custom || "").trim());
+    if (m) return { text: "#" + (m[1].length === 3 ? [...m[1]].map((x) => x + x).join("") : m[1]), shadow: "none" };
+    if (C.pillText === "contrast") return { text: RP.textColor(bg), shadow: "none" };
+    const [hh, s, l] = hexToHsl(bg), light = l >= 50;
+    const text = light ? hslToHex(hh, Math.round(s * PILL.satLight), Math.max(l - PILL.darker, 20)) : hslToHex(hh, Math.round(s * PILL.satDark), Math.min(l + PILL.lighter, 85));
+    return { text, shadow: light ? "0 1px 0 rgba(255,255,255,0.45)" : "0 1px 1px rgba(0,0,0,0.28)" };
+  }
+
   let activePicker = null;
   function closePicker() {
     if (!activePicker) return;
@@ -256,8 +275,9 @@
     activePicker = null;
   }
 
-  function colorPicker(c) {
-    let color = c.effColor;
+  // opts : { value, onChange(hex), resetLabel, onReset } — onReset absent = pas de bouton de retour automatique
+  function colorPicker(opts) {
+    let color = opts.value;
     const swatch = h("button", { type: "button", class: "swatch", style: `--c:${color}`, title: "Changer la couleur", "aria-label": "Changer la couleur" });
     swatch.addEventListener("click", () => { if (activePicker && activePicker.owner === swatch) closePicker(); else open(); });
 
@@ -283,29 +303,32 @@
         color = hx; swatch.style.setProperty("--c", hx); hex.value = hx;
         if (fromPalette) { [H, S, L] = hexToHsl(hx); sH.value = H; sS.value = S; sL.value = L; }
         tracks();
-        RP.setChar(c.id, { color: hx }, false);
+        opts.onChange(hx);
       }
       hex.addEventListener("change", () => {
         const v = hex.value.trim().replace(/^#?/, "#").toLowerCase();
         if (/^#[0-9a-f]{6}$/.test(v)) set(v, true); else hex.value = color;
       });
       const pop = h("div", { class: "picker-pop", role: "dialog", "aria-label": "Choisir une couleur" },
-        h("div", { class: "picker-grid" }, C.palette.map((col) => h("button", { type: "button", class: "swatch swatch-mini", style: `--c:${col}`, title: col, "aria-label": col, onclick: () => set(col, true) }))),
+        h("div", { class: "picker-grid" }, C.palette.concat(C.pickerExtra || []).map((col) => h("button", { type: "button", class: "swatch swatch-mini", style: `--c:${col}`, title: col, "aria-label": col, onclick: () => set(col, true) }))),
         h("div", { class: "picker-sliders" }, sH, sS, sL),
         h("div", { class: "picker-foot" }, hex,
-          c.autoColor ? btn("Couleur du forum", () => { closePicker(); RP.setChar(c.id, { color: null }); }, "btn-small", "refresh") : null));
+          opts.onReset ? btn(opts.resetLabel || "Automatique", () => { closePicker(); opts.onReset(); }, "btn-small", "refresh") : null));
       document.body.append(pop);
       tracks();
 
-      const r = swatch.getBoundingClientRect(), w = pop.offsetWidth, ht = pop.offsetHeight;
-      pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
-      pop.style.top = `${r.bottom + 8 + ht > window.innerHeight ? Math.max(8, r.top - ht - 8) : r.bottom + 8}px`;
+      // La fenetre suit la pastille quand la page defile ou change de taille
+      const place = () => {
+        const r = swatch.getBoundingClientRect(), w = pop.offsetWidth, ht = pop.offsetHeight;
+        pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
+        pop.style.top = `${r.bottom + 8 + ht > window.innerHeight ? Math.max(8, r.top - ht - 8) : r.bottom + 8}px`;
+      };
+      place();
 
       const on = (e) => {
         if (e.type === "keydown") { if (e.key === "Escape") closePicker(); return; }
-        if (e.type === "pointerdown" && (pop.contains(e.target) || swatch.contains(e.target))) return;
-        if (e.type === "scroll" && pop.contains(e.target)) return;
-        closePicker();
+        if (e.type === "scroll" || e.type === "resize") { if (!pop.contains(e.target)) place(); return; }
+        if (!pop.contains(e.target) && !swatch.contains(e.target)) closePicker();
       };
       activePicker = { pop, on, owner: swatch };
       ["pointerdown", "keydown", "scroll", "resize"].forEach((ev) => window.addEventListener(ev, on, true));
@@ -334,9 +357,14 @@
       const list = RP.charsOf(p.key);
       return section(`Personnages de ${p.label}`,
         list.length ? h("div", { class: "table-wrap" }, h("table", { class: "table" },
-          h("thead", {}, h("tr", {}, ["Couleur", "Nom", "RP", ""].map((t) => h("th", {}, t)))),
+          h("thead", {}, h("tr", {}, ["Fond", "Texte", "Nom", "RP", ""].map((t) => h("th", {}, t)))),
           h("tbody", {}, list.map((c) => h("tr", {},
-            h("td", { class: "cell-color" }, colorPicker(c), h("span", { class: "sub" }, c.color ? "" : c.autoColor ? "forum" : "défaut")),
+            h("td", { class: "cell-color" },
+              colorPicker({ value: c.effColor, onChange: (hx) => RP.setChar(c.id, { color: hx }, false), resetLabel: "Couleur du forum", onReset: c.autoColor ? () => RP.setChar(c.id, { color: null }) : null }),
+              h("span", { class: "sub" }, c.color ? "" : c.autoColor ? "forum" : "défaut")),
+            h("td", { class: "cell-color" },
+              colorPicker({ value: pillText(c.effColor, c.text_color).text, onChange: (hx) => RP.setChar(c.id, { text_color: hx }, false), resetLabel: "Automatique", onReset: c.text_color ? () => RP.setChar(c.id, { text_color: null }) : null }),
+              h("span", { class: "sub" }, c.text_color ? "" : "auto")),
             h("td", {}, h("input", { class: "field-input", type: "text", value: c.name, "aria-label": "Nom", onchange: (e) => { const v = e.target.value.trim(); if (v) RP.setChar(c.id, { name: v }); else e.target.value = c.name; } })),
             h("td", { class: "cell-num" }, used[c.id] || 0),
             h("td", { class: "cell-actions" }, iconBtn("trash", "Supprimer", () => confirmDeleteChar(c, used[c.id] || 0), "btn-small btn-danger"))))))) : empty("Aucun personnage."));
