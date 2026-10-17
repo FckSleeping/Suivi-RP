@@ -45,8 +45,8 @@
   --player-none: #9a96ad;
 
   /* Typographie */
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
-  --font-title: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-body: inter;
+  --font-title: inter;
   --font-size: 16px;
   --line-height: 1.5;
 
