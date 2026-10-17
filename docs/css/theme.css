@@ -23,8 +23,8 @@
   --danger: #b5483f;
 
   /* Joueuses (une couleur par joueuse) */
-  --player-fcksleeping: #7a6fb0;
-  --player-chatondelalune: #3f8f8b;
+  --player-fcksleeping: #d27fc2;
+  --player-chatondelalune: #6a4fc2;
   --player-none: #9a8c84;
 
   /* Typographie */
@@ -47,7 +47,7 @@
     --bg: #1e1a19; --surface: #2a2423; --surface-alt: #332b29; --text: #f0e6e0; --muted: #a8998f;
     --border: #433937; --accent: #e08f75; --accent-soft: #4a322b; --accent-contrast: #1e1a19;
     --ok: #7fc096; --warn: #e0b060; --danger: #e87d73;
-    --player-fcksleeping: #a79be0; --player-chatondelalune: #6cc4bf;
+    --player-fcksleeping: #e39ad5; --player-chatondelalune: #9a85e6;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 }
@@ -159,3 +159,25 @@ h1, h2, h3 { font-family: var(--font-title); line-height: 1.2; }
 .badge { white-space: nowrap; }
 .cell-title .badge { margin-left: 0.35rem; }
 .th-btn { text-transform: inherit; letter-spacing: inherit; font-weight: inherit; }
+
+/* ---------- Tracker : pastilles de personnages, etat, NSFW ---------- */
+.pill { display: inline-block; min-width: 6.5rem; padding: 0.1rem 0.8rem; border-radius: 999px; text-align: center; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.pill-empty { background: var(--surface-alt); color: var(--muted); font-weight: 400; }
+.pill-auto { font-style: italic; opacity: 0.85; }
+.pill-turn { color: #fff; min-width: 5rem; }
+.pill-turn.player-chatondelalune { background: var(--player-chatondelalune); }
+.pill-turn.player-fcksleeping { background: var(--player-fcksleeping); }
+.tracker td { vertical-align: middle; }
+.cell-link a { color: var(--text); font-size: 0.85rem; }
+.cell-nsfw { text-align: center; color: #d6728d; font-size: 1.1rem; }
+td.cell-nsfw:not(:empty) { background: #f6dde4; }
+.row-done { opacity: 0.55; }
+.color-input { width: 2.2rem; height: 2rem; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-small); background: none; cursor: pointer; }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { border-color: var(--danger); background: transparent; }
+.btn-primary.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-primary.btn-danger:hover { background: var(--danger); filter: brightness(1.08); }
+@media (prefers-color-scheme: dark) { td.cell-nsfw:not(:empty) { background: #4a2a35; } }
+
+/* ---------- Message d'information (ex. installation terminee) ---------- */
+.notice { padding: var(--space-small) var(--space); border-radius: var(--radius-small); background: var(--accent-soft); border: 1px solid var(--border); }

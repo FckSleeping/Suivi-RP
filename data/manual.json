@@ -1,9 +1,6 @@
 {
- "_aide": "Vos corrections. La synchronisation lit ce fichier mais ne l'ecrit jamais.",
  "characters": {},
- "forum_rules": {},
- "replacements": {},
- "schema": 1,
+ "schema": 2,
  "seen": {},
  "topics": {}
 }

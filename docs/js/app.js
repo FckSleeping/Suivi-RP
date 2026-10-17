@@ -3,7 +3,7 @@
   const RP = window.RP, S = RP.state, h = RP.h;
   const PAGES = [
     ["dashboard", "Tableau de bord"], ["rp", "RP"], ["characters", "Personnages"],
-    ["categories", "Catégories"], ["archives", "Archives"], ["settings", "Paramètres"],
+    ["settings", "Paramètres"],
   ];
   const current = () => {
     const k = (location.hash.replace(/^#\/?/, "") || "dashboard");
@@ -24,6 +24,22 @@
       RP.btn("Télécharger manual.json", RP.downloadManual, "btn-primary btn-small"));
   }
 
+  // Lien d'installation : https://…/#setup=<depot + jeton encodes>
+  // Enregistre la configuration dans CE navigateur puis efface le jeton de l'adresse et de l'historique.
+  function consumeSetupLink() {
+    const m = /^#setup=(.+)$/.exec(location.hash);
+    if (!m) return;
+    try {
+      const bin = atob(m[1].replace(/-/g, "+").replace(/_/g, "/"));
+      const s = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+      if (/^[\w.-]+\/[\w.-]+$/.test(s.repo || "") && typeof s.token === "string" && s.token) {
+        RP.saveSettings({ repo: s.repo, branch: s.branch || window.RP_CONFIG.branch, token: s.token });
+        RP.notice = "Installation terminée : cet appareil est relié à vos données.";
+      } else RP.notice = "Lien d’installation invalide.";
+    } catch (e) { RP.notice = "Lien d’installation invalide."; }
+    history.replaceState(null, "", location.pathname + location.search + "#/dashboard");
+  }
+
   function renderPage() {
     renderNav();
     const root = document.getElementById("app");
@@ -34,16 +50,22 @@
         RP.sourceForm());
       return;
     }
-    root.replaceChildren(...[].concat(RP.views[current()]()));
+    const notice = RP.notice ? h("p", { class: "notice" }, RP.notice) : null;
+    RP.notice = "";
+    root.replaceChildren(...[notice, RP.views[current()]()].flat(Infinity).filter(Boolean));
   }
 
   RP.onChange(() => {
     renderBar();
     if (!RP.isSilent()) renderPage();
   });
-  window.addEventListener("hashchange", () => { renderPage(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", () => {
+    if (/^#setup=/.test(location.hash)) { consumeSetupLink(); RP.load(); return; } // lien ouvert dans un onglet deja charge
+    renderPage(); window.scrollTo(0, 0);
+  });
   window.addEventListener("beforeunload", (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ""; } });
   document.getElementById("dialog").addEventListener("click", (e) => { if (e.target.id === "dialog") RP.closeDialog(); });
 
+  consumeSetupLink();
   RP.load();
 })();

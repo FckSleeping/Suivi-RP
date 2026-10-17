@@ -2,60 +2,59 @@
 
 Outil prive de suivi des RP du forum Sweeter Weather.
 
-> **Le depot doit rester PRIVE** : `data/forum.json` contient les titres des
-> sujets et les pseudos, y compris ceux de sujets prives.
+> **Le depot doit rester PRIVE** : `data/forum.json` contient des pseudos et des informations
+> issues de sujets prives.
 
-## Contenu actuel
-- `scripts/proto_forum.py` : prototype de lecture du forum (lecture seule), reutilise par la synchro.
+## Principe
+Vous ajoutez vous-meme vos personnages et vos RP depuis la page. La synchronisation (lecture seule)
+relit ensuite uniquement les RP de votre liste pour savoir qui a ecrit en dernier, et donc a qui
+est le tour.
+
+## Contenu
+- `docs/` : la page web. `index.html`, `js/` (logique), `css/structure.css` (mise en page) et
+  `css/theme.css` (VOTRE fichier d'apparence).
+- `scripts/sync.py` : la synchronisation. `scripts/proto_forum.py` : briques de lecture du forum
+  (et son mode `--discover`, qui sert a explorer le forum a la main).
 - `scripts/check_connexion.py` : test de connexion depuis GitHub Actions.
-- `scripts/sync.py` : synchronisation (etape 1).
-- `data/forum.json` : donnees lues sur le forum (ecrit par la synchro uniquement).
-- `data/manual.json` : VOS corrections (jamais ecrit par la synchro).
-- `data/status.json` : etat de la derniere synchro et erreurs.
-- `.github/workflows/test-connexion.yml` : lance le test de connexion a la demande.
-- `docs/` : la page web (etape 2) : `index.html`, `js/` (logique), `css/structure.css` (mise en page) et `css/theme.css` (VOTRE fichier d'apparence).
-- `.github/workflows/synchro.yml` : lance la synchro a la demande et enregistre les donnees.
+- `data/manual.json` : VOTRE liste (personnages, RP, notes). Jamais ecrit par la synchro.
+- `data/forum.json`, `data/status.json` : ecrits par la synchro uniquement.
+- `.github/workflows/` : `test-connexion.yml` et `synchro.yml` (lancement a la demande).
 
 ## Identifiants
-Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont
-stockes dans les Secrets du depot (Settings > Secrets and variables > Actions) :
-`FORUM_USER` et `FORUM_PASSWORD`.
+Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont dans les Secrets du depot
+(Settings > Secrets and variables > Actions) : `FORUM_USER` et `FORUM_PASSWORD`.
+
+## Utiliser la page
+- **Personnages** : ajoutez des noms (plusieurs d'un coup possible), choisissez la joueuse ; chacun
+  recoit une couleur modifiable.
+- **RP** : « Ajouter un RP » = coller le lien du sujet, choisir le personnage de chacune, cocher NSFW
+  si besoin. Le titre est repris du lien (modifiable). Un RP sans lien (pas encore commence) est possible.
+  Colonne « Etat » = a qui le tour, deduit de l'auteur du dernier message (modifiable a la main).
+  « Supprimer » retire le RP de la liste (rien n'est touche sur le forum). « Termine » le masque par defaut.
+- Si le personnage n'est pas choisi, la page le reconnait d'apres les comptes qui ont ecrit dans le sujet
+  (affiche en italique), a condition que le nom du personnage soit celui du compte.
 
 ## Lancer la synchro
 Onglet Actions > « Synchronisation du forum » > Run workflow.
 En local : `python scripts/sync.py` (avec `FORUM_USER` / `FORUM_PASSWORD` dans l'environnement).
-Options utiles : `--discover oui|non|auto`, `--only 176` (un seul sujet), `--dry-run`.
+Options : `--only 176` (un seul sujet), `--all` (relire aussi les RP termines), `--dry-run`.
 
-## Format des donnees
-**forum.json** : `members` (comptes des groupes 3 et 4), `forums` (forum -> categorie),
-`topics` (par numero de sujet : titre, chemin, forum, `auto_rp`, `characters` = comptes,
-`created`, `last_post`, `post_count`, `last_changed`, `flags`), `suggestions` (remplacements proposes).
-Dates du forum : heure de Paris ; dates de synchro (suffixe Z) : UTC.
+## Publier la page
+Seul `docs/` est publie (Settings > Pages > « Deploy from a branch » > `main`, dossier `/docs` ;
+ou copie du contenu de `docs/` sur Archive-Host). Les donnees ne sont JAMAIS publiees : la page les lit
+dans le depot prive via l'API GitHub, avec un jeton propre a chaque appareil (page « Parametres »).
 
-**manual.json** (rempli plus tard depuis la page, modifiable a la main) :
-- `characters` : `{compte: {name, player, aliases[], active}}`
-- `topics` : `{numero: {include, status (en_cours|termine|archive), characters[], title, path, note}}`
-  — `path` + `title` permettent d'ajouter un sujet a la main.
-- `forum_rules` : `{numero_de_forum: true|false}` — par exemple `false` pour exclure le forum SMS.
-- `replacements` : `{"nouveau>ancien": {decision: accepted|refused}}`
+**Lien d'installation** : Parametres > « Copier le lien d'installation » donne un lien a ouvrir sur un autre
+appareil ; il enregistre le depot et le jeton dans ce navigateur puis les efface de l'adresse. Le lien contient le
+jeton : l'envoyer en message prive, puis supprimer le message.
 
-Priorite pour savoir si un sujet est un RP : choix manuel du sujet > regle manuelle du forum > regle automatique.
+Tester en local : a la racine du depot, `python -m http.server`, puis `http://localhost:8000/docs/`.
 
-## Alertes (`flags`)
-`auteur_inconnu`, `date_illisible`, `creation_inconnue`, `un_seul_camp` (les personnages ne couvrent
-pas les deux joueuses), `erreur_lecture`, `jamais_lu`.
+Pour l'instant, vos modifications s'enregistrent en telechargeant `manual.json` (bandeau en haut de
+la page) puis en remplacant `data/manual.json` dans le depot. L'enregistrement direct est l'etape 3.
 
-## La page web (docs/)
-Seul le dossier `docs/` est destine a etre publie (GitHub Pages : Settings > Pages > « Deploy from a
-branch » > branche `main`, dossier `/docs` ; ou copie du contenu de `docs/` sur Archive-Host).
-Les donnees (`data/`) ne sont JAMAIS publiees : la page les lit dans le depot prive via l'API GitHub,
-avec un jeton propre a chaque appareil (page « Parametres » > « Comment creer le jeton ? »).
-
-Tester en local, sans jeton : a la racine du depot, `python -m http.server`, puis ouvrir
-`http://localhost:8000/docs/`.
-
-Pour l'instant, vos corrections s'enregistrent en telechargeant `manual.json` (bandeau en haut de la page)
-puis en remplacant `data/manual.json` dans le depot. L'enregistrement direct est l'etape 3.
-
-`manual.json` : en plus de ce qui precede, `forum_names` (`{numero_de_forum: nom}`) et `seen`
-(`{numero_de_sujet: dernier_message_vu}`), `topics[...].checked` (alerte validee), `topics[...].note`.
+## Format de manual.json
+- `characters` : `{id: {name, player, color}}` (`player` = compte forum de la joueuse)
+- `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, status ("termine"),
+  turn (compte, ou "none"), note}}`
+- `seen` : `{id_rp: dernier_message_vu}` (pour le badge « Nouveau »)
