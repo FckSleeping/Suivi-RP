@@ -1,11 +1,9 @@
 {
- "discovery_ran": true,
  "errors": [],
- "last_run": "2026-10-16T23:33:29Z",
+ "last_run": "2026-10-17T09:56:41Z",
  "ok": true,
- "schema": 1,
- "topics_read": 69,
- "topics_rp": 69,
- "topics_total": 103,
+ "schema": 2,
+ "topics_read": 0,
+ "topics_total": 0,
  "topics_with_new_reply": 0
 }
