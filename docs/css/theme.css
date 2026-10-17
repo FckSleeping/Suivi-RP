@@ -242,7 +242,7 @@ select.field-input { cursor: pointer; }
 .cell-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 .cell-link a { color: var(--accent); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
 .cell-link a:hover { text-decoration: underline; }
-.cell-nsfw { text-align: center; color: #e0527a; font-size: 1.1rem; }
+.cell-nsfw { text-align: center; color: #e0527a; font-size: 1.1rem; font-family: system-ui;}
 td.cell-nsfw:not(:empty) { background: rgba(255, 120, 160, 0.16); }
 .note { font-size: 0.85rem; color: var(--muted); font-style: italic; margin-top: 0.2rem; }
 
