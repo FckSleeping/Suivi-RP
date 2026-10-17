@@ -1,18 +1,15 @@
 // Demarrage, menu, navigation, barre d'enregistrement.
 (function () {
   const RP = window.RP, S = RP.state, h = RP.h;
-  const PAGES = [
-    ["dashboard", "Tableau de bord"], ["rp", "RP"], ["characters", "Personnages"],
-    ["settings", "Paramètres"],
-  ];
-  const current = () => {
-    const k = (location.hash.replace(/^#\/?/, "") || "dashboard");
-    return PAGES.some((p) => p[0] === k) ? k : "dashboard";
-  };
+  const PAGES = [["dashboard", "Tableau de bord", "home"], ["settings", "Paramètres", "settings"]];
+  // Anciennes adresses : #/rp -> tableau de bord, #/characters -> Parametres (section Personnages)
+  const ALIASES = { rp: "dashboard", characters: "settings" };
+  const raw = () => location.hash.replace(/^#\/?/, "").split("?")[0] || "dashboard";
+  const current = () => { const k = ALIASES[raw()] || raw(); return PAGES.some((p) => p[0] === k) ? k : "dashboard"; };
 
   function renderNav() {
-    document.getElementById("nav").replaceChildren(...PAGES.map(([k, label]) =>
-      h("a", { class: "nav-link" + (k === current() ? " active" : ""), href: `#/${k}` }, label)));
+    document.getElementById("nav").replaceChildren(...PAGES.map(([k, label, ic]) =>
+      h("a", { class: "nav-link" + (k === current() ? " active" : ""), href: `#/${k}` }, RP.icon(ic), h("span", { class: "nav-label" }, label))));
   }
 
   // Voyant de connexion : dit clairement si vos modifications seront enregistrees
@@ -73,7 +70,18 @@
     }
     const notice = RP.notice ? h("p", { class: "notice" }, RP.notice) : null;
     RP.notice = "";
-    root.replaceChildren(...[notice, RP.views[current()]()].flat(Infinity).filter(Boolean));
+    let content;
+    try {
+      content = [notice, RP.views[current()]()].flat(Infinity).filter(Boolean);
+    } catch (err) {
+      console.error(err);
+      content = [h("section", { class: "card" }, h("h2", { class: "card-title" }, "Cette page a rencontré une erreur"),
+        h("p", { class: "error" }, String((err && err.message) || err)),
+        h("pre", { class: "error-detail" }, String((err && err.stack) || "").split("\n").slice(0, 4).join("\n")),
+        h("p", { class: "hint" }, "Faites un rechargement forcé (Ctrl+F5). Si l’erreur persiste, recopiez ce message."))];
+    }
+    root.replaceChildren(...content);
+    if (raw() === "characters") setTimeout(() => { const el = document.getElementById("personnages"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30);
   }
 
   RP.onChange(() => {

@@ -93,8 +93,22 @@
   function apply(d) {
     const m = Object.assign(emptyManual(), d.manual);
     ["forum_rules", "forum_names", "replacements"].forEach((k) => delete m[k]); // anciens reglages abandonnes
-    ["characters", "topics", "seen"].forEach((k) => (m[k] = m[k] || {}));
+    ["characters", "topics", "seen"].forEach((k) => (m[k] = m[k] && typeof m[k] === "object" ? m[k] : {}));
     m.schema = 2;
+    // Tolerance aux modifications faites a la main dans manual.json
+    const playerKey = (v) => { const s = norm(v); const p = C.players.find((x) => norm(x.key) === s || norm(x.label) === s); return p ? p.key : v; };
+    Object.keys(m.characters).forEach((id) => {
+      const c = m.characters[id];
+      if (!c || typeof c !== "object" || Array.isArray(c)) { delete m.characters[id]; return; }
+      c.name = c.name == null ? "" : String(c.name);
+      if (c.player) c.player = playerKey(c.player);
+    });
+    Object.keys(m.topics).forEach((id) => {
+      const e = m.topics[id];
+      if (!e || typeof e !== "object" || Array.isArray(e)) { delete m.topics[id]; return; }
+      if (!e.chars || typeof e.chars !== "object" || Array.isArray(e.chars)) delete e.chars;
+      else Object.keys(e.chars).forEach((p) => { const k = playerKey(p); if (k !== p) { e.chars[k] = e.chars[p]; delete e.chars[p]; } });
+    });
     d.forum.topics = d.forum.topics || {};
     Object.assign(state, { forum: d.forum, manual: m, base: JSON.parse(JSON.stringify(m)), status: d.status, source: d.source, dirty: 0, error: "", saveStatus: "", saveError: "" });
     emit();
@@ -118,8 +132,30 @@
   RP.playerOfGroup = (g) => (C.players.find((p) => p.group === g) || {}).key || null;
   RP.otherPlayer = (key) => (C.players.find((p) => p.key !== key) || {}).key || null;
 
+  // Couleur « du forum » : la couleur de paroles la plus frequente du compte portant ce nom (relevee par la synchro)
+  let acFor = null, acCache = {};
+  const autoColors = () => {
+    if (acFor === state.forum) return acCache;
+    const tally = {};
+    Object.values(state.forum.topics || {}).forEach((t) => (t.authors || []).forEach((a) => {
+      if (!a.color) return;
+      const k = norm(a.name);
+      (tally[k] = tally[k] || {})[a.color] = ((tally[k] || {})[a.color] || 0) + 1;
+    }));
+    acCache = Object.fromEntries(Object.entries(tally).map(([k, v]) => [k, Object.entries(v).sort((x, y) => y[1] - x[1])[0][0]]));
+    acFor = state.forum;
+    return acCache;
+  };
+  const fallbackColor = (name) => {
+    let n = 0;
+    for (const ch of norm(name)) n = (n * 31 + ch.charCodeAt(0)) >>> 0;
+    return C.palette[n % C.palette.length];
+  };
+  RP.autoColor = (c) => autoColors()[norm(c.name)] || null;
+  RP.colorOf = (c) => c.color || RP.autoColor(c) || fallbackColor(c.name);
+
   RP.characters = () => Object.entries(state.manual.characters)
-    .map(([id, c]) => ({ id, ...c }))
+    .map(([id, c]) => ({ id, ...c, effColor: RP.colorOf(c), autoColor: RP.autoColor(c) }))
     .sort((a, b) => norm(a.name).localeCompare(norm(b.name)));
   RP.charsOf = (player) => RP.characters().filter((c) => c.player === player);
   RP.textColor = (hex) => {
@@ -160,11 +196,11 @@
     // Personnage de chaque joueuse : celui que vous avez choisi, sinon deviné d'après les comptes vus dans le sujet
     const charFor = (player) => {
       const chosen = e.chars && e.chars[player];
-      if (chosen && state.manual.characters[chosen]) return { ...state.manual.characters[chosen], id: chosen, auto: false };
+      if (chosen && state.manual.characters[chosen]) { const ch = state.manual.characters[chosen]; return { ...ch, id: chosen, color: RP.colorOf(ch), auto: false }; }
       const group = (C.players.find((p) => p.key === player) || {}).group;
       const names = ((t && t.authors) || []).filter((a) => a.group === group).map((a) => norm(a.name));
       const found = RP.charsOf(player).find((c) => names.includes(norm(c.name)));
-      return found ? { ...found, auto: true } : null;
+      return found ? { ...found, color: found.effColor, auto: true } : null;
     };
 
     return {
@@ -223,16 +259,19 @@
   };
 
   RP.addCharacters = (names, player) => {
-    const used = Object.values(state.manual.characters).length;
-    names.forEach((name, i) => {
-      const id = nextId("c", state.manual.characters);
-      state.manual.characters[id] = { name, player, color: C.palette[(used + i) % C.palette.length] };
-    });
+    names.forEach((name) => { state.manual.characters[nextId("c", state.manual.characters)] = { name, player }; });
     touch();
   };
   RP.setChar = (id, patch, rerender = true) => {
-    Object.assign(state.manual.characters[id], patch);
+    Object.entries(patch).forEach(([k, v]) => { if (v === null || v === undefined || v === "") delete state.manual.characters[id][k]; else state.manual.characters[id][k] = v; });
     touch(rerender);
+  };
+  // Modifie plusieurs personnages d'un coup (une seule sauvegarde)
+  RP.bulkChars = (mutator) => { mutator(state.manual.characters); touch(); };
+  // Abandonne les couleurs choisies a la main quand le forum en donne une
+  RP.resetColors = () => {
+    Object.values(state.manual.characters).forEach((c) => { if (c.color && RP.autoColor(c)) delete c.color; });
+    touch();
   };
   RP.deleteChar = (id) => {
     delete state.manual.characters[id];

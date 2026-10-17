@@ -51,7 +51,7 @@
   const section = (title, ...kids) => h("section", { class: "card" }, h("h2", { class: "card-title" }, title), ...kids);
   const goto = (page) => { location.hash = `#/${page}`; };
 
-  const ui = (RP.ui = { rp: { q: "", char: "", turn: "", nsfw: false, done: false, sort: "order", dir: 1 } });
+  const ui = (RP.ui = { rp: { q: "", char: "", turn: "", view: "", nsfw: false, done: false, sort: "order", dir: 1 } });
 
   // ------------------------------------------------------------------ dialogue
   const dlg = () => document.getElementById("dialog");
@@ -91,61 +91,27 @@
       h("div", { class: "item-actions" }, actions));
   }
 
-  // ------------------------------------------------------------------ TABLEAU DE BORD
+  // ------------------------------------------------------------------ TABLEAU DE BORD = pastilles + liste des RP
+  const isFlagged = (x) => x.flags.some((f) => f !== "jamais_lu") || (x.url && x.flags.includes("jamais_lu") && S.status);
+
   function dashboard() {
-    const rows = RP.rows().filter((x) => !x.done);
-    if (!rows.length) {
-      return [section("Bienvenue",
-        h("p", {}, "Commencez par ajouter vos personnages, puis les RP à suivre."),
-        h("div", { class: "dialog-actions" }, btn("Ajouter des personnages", () => goto("characters")), btn("Ajouter un RP", () => { goto("rp"); setTimeout(() => topicDialog(), 50); }, "btn-primary")))];
-    }
-    const unseen = rows.filter((x) => x.unseen).sort(RP.byRecent);
-    const flagged = rows.filter((x) => x.flags.some((f) => f !== "jamais_lu") || (x.url && x.flags.includes("jamais_lu") && S.status));
-    const tile = (n, label, preset) => h("button", { type: "button", class: "tile", onclick: () => { Object.assign(ui.rp, { q: "", char: "", turn: "", nsfw: false, done: false }, preset); goto("rp"); } },
-      h("span", { class: "tile-n" }, n), h("span", { class: "tile-l" }, label));
-
-    return [
-      h("div", { class: "tiles" },
-        RP.players.map((p) => tile(rows.filter((x) => x.turn === p.key).length, `Au tour de ${p.label}`, { turn: p.key })),
-        tile(unseen.length, "Nouvelles réponses", {}),
-        tile(flagged.length, "À vérifier", {})),
-      section("Nouvelles réponses",
-        unseen.length ? h("ul", { class: "list" }, unseen.map((x) => item(x, btn("Marquer comme vu", () => RP.markSeen([x.id]), "btn-small", "check")))) : empty("Rien de nouveau depuis votre dernière visite."),
-        unseen.length > 1 ? btn("Tout marquer comme vu", () => RP.markSeen(unseen.map((x) => x.id)), "btn-small") : null),
-      section("Activité récente", h("ul", { class: "list" }, [...rows].filter((x) => x.last).sort(RP.byRecent).slice(0, 10).map((x) => item(x)))),
-      flagged.length ? section("À vérifier",
-        h("ul", { class: "list" }, flagged.map((x) => item(x, btn("Modifier", () => topicDialog(x.id), "btn-small")))),
-        h("p", { class: "hint" }, "Survolez l’étiquette « À vérifier » pour voir la raison.")) : null,
-    ];
-  }
-
-  // ------------------------------------------------------------------ RP (le tracker)
-  function rpView() {
     const f = ui.rp;
+    const wrap = h("div", {});
     const box = h("div", { class: "table-wrap" });
-    const allChars = RP.characters();
-
-    const bar = h("div", { class: "filters" },
-      h("input", { class: "field-input", type: "search", placeholder: "Rechercher un titre ou un personnage…", value: f.q, oninput: (e) => { f.q = e.target.value; draw(); } }),
-      h("select", { class: "field-input", value: f.char, onchange: (e) => { f.char = e.target.value; draw(); } },
-        h("option", { value: "" }, "Tous les personnages"), allChars.map((c) => h("option", { value: c.id }, c.name))),
-      h("select", { class: "field-input", value: f.turn, onchange: (e) => { f.turn = e.target.value; draw(); } },
-        h("option", { value: "" }, "Tous les états"), RP.players.map((p) => h("option", { value: p.key }, `Au tour de ${p.label}`))),
-      h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.nsfw, onchange: (e) => { f.nsfw = e.target.checked; draw(); } }), h("span", {}, "NSFW")),
-      h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.done, onchange: (e) => { f.done = e.target.checked; draw(); } }), h("span", {}, "Voir les terminés")),
-      btn("Ajouter un RP", () => topicDialog(), "btn-primary", "plus"));
 
     const sortKey = {
       order: (x) => x.order, title: (x) => norm(x.title), turn: (x) => x.turn || "~", last: (x) => RP.ms(x.last) || 0,
       ...Object.fromEntries(RP.players.map((p) => [p.key, (x) => norm((x.chars[p.key] || {}).name || "~")])),
     };
 
-    function draw() {
+    function drawTable() {
       const items = RP.rows().filter((x) => {
         if (x.done && !f.done) return false;
         if (f.q && !norm([x.title, ...RP.players.map((p) => (x.chars[p.key] || {}).name)].join(" ")).includes(norm(f.q))) return false;
         if (f.char && !RP.players.some((p) => x.chars[p.key] && x.chars[p.key].id === f.char)) return false;
         if (f.turn && x.turn !== f.turn) return false;
+        if (f.view === "new" && !x.unseen) return false;
+        if (f.view === "check" && !isFlagged(x)) return false;
         if (f.nsfw && !x.nsfw) return false;
         return true;
       });
@@ -153,7 +119,7 @@
       items.sort((a, b) => (key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0) * f.dir);
 
       const th = (label, k) => h("th", { class: "sortable" + (f.sort === k ? " sorted" : "") },
-        h("button", { type: "button", class: "th-btn", onclick: () => { f.dir = f.sort === k ? -f.dir : 1; f.sort = k; draw(); } }, label, f.sort === k ? (f.dir > 0 ? " ▲" : " ▼") : ""));
+        h("button", { type: "button", class: "th-btn", onclick: () => { f.dir = f.sort === k ? -f.dir : 1; f.sort = k; drawTable(); } }, label, f.sort === k ? (f.dir > 0 ? " ▲" : " ▼") : ""));
 
       box.replaceChildren(
         items.length
@@ -172,11 +138,47 @@
                   iconBtn("pencil", "Modifier", () => topicDialog(x.id), "btn-small"),
                   iconBtn("trash", "Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")))))
             )
-          : empty(RP.rows().length ? "Aucun RP ne correspond à ces filtres." : "Aucun RP pour l’instant : cliquez sur « Ajouter un RP »."),
+          : h("div", { class: "empty-box" },
+              empty(RP.rows().length ? "Aucun RP ne correspond à ces filtres." : "Aucun RP pour l’instant : cliquez sur « Ajouter un RP »."),
+              RP.rows().length ? btn("Effacer les filtres", () => { Object.assign(f, { q: "", char: "", turn: "", view: "", nsfw: false, done: false }); build(); }, "btn-small") : null),
         h("p", { class: "count" }, `${items.length} RP`));
     }
-    draw();
-    return [h("h2", { class: "page-title" }, "RP"), bar, box];
+
+    // Pastilles + barre de filtres (redessinees quand un filtre change les chiffres ou la selection)
+    function build() {
+      const live = RP.rows().filter((x) => !x.done);
+      const unseen = live.filter((x) => x.unseen);
+      const tile = (n, label, active, onclick) => h("button", { type: "button", class: "tile" + (active ? " tile-active" : ""), onclick },
+        h("span", { class: "tile-n" }, n), h("span", { class: "tile-l" }, label));
+      const toggle = (k, v) => () => { f[k] = f[k] === v ? "" : v; build(); };
+
+      const welcome = !RP.rows().length && !RP.characters().length
+        ? section("Pour commencer",
+            h("p", {}, "Ajoutez d’abord vos personnages (Paramètres › Personnages), puis les RP à suivre."),
+            h("div", { class: "dialog-actions" }, btn("Ajouter des personnages", () => goto("characters"), "", "users"), btn("Ajouter un RP", () => topicDialog(), "btn-primary", "plus")))
+        : null;
+
+      const tiles = h("div", { class: "tiles" },
+        RP.players.map((p) => tile(live.filter((x) => x.turn === p.key).length, `Au tour de ${p.label}`, f.turn === p.key, toggle("turn", p.key))),
+        tile(unseen.length, "Nouvelles réponses", f.view === "new", toggle("view", "new")),
+        tile(live.filter(isFlagged).length, "À vérifier", f.view === "check", toggle("view", "check")));
+
+      const bar = h("div", { class: "filters" },
+        h("input", { class: "field-input", type: "search", placeholder: "Rechercher un titre ou un personnage…", value: f.q, oninput: (e) => { f.q = e.target.value; drawTable(); } }),
+        h("select", { class: "field-input", value: f.char, onchange: (e) => { f.char = e.target.value; drawTable(); } },
+          h("option", { value: "" }, "Tous les personnages"), RP.characters().map((c) => h("option", { value: c.id }, c.name))),
+        h("select", { class: "field-input", value: f.turn, onchange: (e) => { f.turn = e.target.value; build(); } },
+          h("option", { value: "" }, "Tous les états"), RP.players.map((p) => h("option", { value: p.key }, `Au tour de ${p.label}`))),
+        h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.nsfw, onchange: (e) => { f.nsfw = e.target.checked; drawTable(); } }), h("span", {}, "NSFW")),
+        h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.done, onchange: (e) => { f.done = e.target.checked; drawTable(); } }), h("span", {}, "Voir les terminés")),
+        unseen.length > 1 ? btn("Tout marquer comme vu", () => RP.markSeen(unseen.map((x) => x.id)), "btn-small", "check") : null,
+        btn("Ajouter un RP", () => topicDialog(), "btn-primary", "plus"));
+
+      wrap.replaceChildren(...[welcome, tiles, bar, box].filter(Boolean));
+      drawTable();
+    }
+    build();
+    return [wrap];
   }
 
   function confirmDelete(id) {
@@ -217,7 +219,7 @@
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Lien du sujet"), url),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Titre"), title),
       charFields,
-      noChars ? h("p", { class: "hint" }, "Aucun personnage dans la liste : ajoutez-les d’abord dans l’onglet « Personnages ».") : null,
+      noChars ? h("div", {}, h("p", { class: "hint" }, "Aucun personnage dans la liste : ajoutez-les d’abord."), btn("Ouvrir Paramètres › Personnages", () => { closeDialog(); goto("characters"); }, "btn-small")) : null,
       h("label", { class: "field field-check" }, nsfw, h("span", {}, "NSFW ♥")),
       h("label", { class: "field field-check" }, done, h("span", {}, "RP terminé")),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "État (à qui le tour)"), turn),
@@ -337,7 +339,7 @@
   }
 
   // ------------------------------------------------------------------ PERSONNAGES
-  function charactersView() {
+  function charactersSection() {
     const names = h("textarea", { class: "field-input", rows: 3, placeholder: "Un ou plusieurs noms, séparés par des virgules ou des retours à la ligne" });
     const player = h("select", { class: "field-input" }, RP.players.map((p) => h("option", { value: p.key }, p.label)));
     const used = {};
@@ -351,7 +353,11 @@
           if (list.length) RP.addCharacters(list, player.value);
         }, "btn-primary", "plus")),
       h("p", { class: "hint" }, "La couleur est relevée automatiquement dans les messages du forum (dialogues colorés) quand le nom du personnage est celui de son compte ; sinon une couleur par défaut est choisie. Cliquez sur la pastille pour la changer."),
-      btn("Reprendre les couleurs du forum", confirmResetColors, "btn-small", "refresh"));
+      h("div", { class: "filters" },
+        btn("Reprendre les couleurs du forum", confirmResetColors, "btn-small", "refresh"),
+        btn("Figer les couleurs de texte", freezeTextColors, "btn-small", "check"),
+        btn("Texte en automatique", confirmClearTextColors, "btn-small", "refresh")),
+      h("p", { class: "hint" }, "« Figer » écrit dans manual.json (champ text_color) la couleur de texte calculée pour chaque personnage qui n’en a pas encore, pour que vous puissiez la retoucher à la main. « Texte en automatique » les efface toutes."));
 
     const block = (p) => {
       const list = RP.charsOf(p.key);
@@ -369,7 +375,28 @@
             h("td", { class: "cell-num" }, used[c.id] || 0),
             h("td", { class: "cell-actions" }, iconBtn("trash", "Supprimer", () => confirmDeleteChar(c, used[c.id] || 0), "btn-small btn-danger"))))))) : empty("Aucun personnage."));
     };
-    return [h("h2", { class: "page-title" }, "Personnages"), add, RP.players.map(block)];
+    // Personnages dont la joueuse est introuvable (ex. faute de frappe dans manual.json) : on les montre quand meme
+    const known = new Set(RP.players.map((p) => p.key));
+    const lost = RP.characters().filter((c) => !known.has(c.player));
+    const lostBlock = lost.length ? section("Personnages à rattacher à une joueuse",
+      h("p", {}, "La joueuse de ces personnages n’est pas reconnue : choisissez-la."),
+      lost.map((c) => h("div", { class: "filters" },
+        h("strong", {}, c.name || "(sans nom)"),
+        h("select", { class: "field-input", value: "", "aria-label": "Joueuse", onchange: (e) => RP.setChar(c.id, { player: e.target.value }) },
+          h("option", { value: "" }, "Choisir…"), RP.players.map((p) => h("option", { value: p.key }, p.label))),
+        iconBtn("trash", "Supprimer", () => confirmDeleteChar(c, used[c.id] || 0), "btn-small btn-danger")))) : null;
+    return [add, RP.players.map(block), lostBlock];
+  }
+
+  // Ecrit la couleur de texte calculee dans text_color, pour les personnages qui n'en ont pas
+  function freezeTextColors() {
+    RP.bulkChars((chars) => RP.characters().forEach((c) => { if (!c.text_color) chars[c.id].text_color = pillText(c.effColor, null).text; }));
+  }
+  function confirmClearTextColors() {
+    openDialog("Remettre le texte en automatique ?", h("div", {},
+      h("p", {}, "Toutes les couleurs de texte (champ text_color) seront effacées ; elles seront de nouveau calculées d’après le fond."),
+      h("div", { class: "dialog-actions" }, btn("Annuler", closeDialog),
+        btn("Effacer", () => { closeDialog(); RP.bulkChars((chars) => Object.values(chars).forEach((c) => delete c.text_color)); }, "btn-primary"))));
   }
 
   function confirmResetColors() {
@@ -436,6 +463,9 @@
   function settingsView() {
     const st = S.status;
     const out = [h("h2", { class: "page-title" }, "Paramètres")];
+    const chars = [charactersSection()].flat(Infinity).filter(Boolean);
+    chars[0].id = "personnages";
+    out.push(...chars);
     if (st) {
       out.push(section("Dernier contrôle du forum",
         h("p", {}, st.ok ? badge("Réussie", "ok") : badge("Avec erreurs", "flag"), ` ${RP.fmtUtc(st.last_run)}`),
@@ -456,7 +486,7 @@
     return out;
   }
 
-  RP.views = { dashboard, rp: rpView, characters: charactersView, settings: settingsView };
+  RP.views = { dashboard, settings: settingsView };
   RP.h = h; RP.btn = btn;
   RP.sourceForm = sourceForm;
 })();
