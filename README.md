@@ -50,8 +50,13 @@ jeton : l'envoyer en message prive, puis supprimer le message.
 
 Tester en local : a la racine du depot, `python -m http.server`, puis `http://localhost:8000/docs/`.
 
-Pour l'instant, vos modifications s'enregistrent en telechargeant `manual.json` (bandeau en haut de
-la page) puis en remplacant `data/manual.json` dans le depot. L'enregistrement direct est l'etape 3.
+## Enregistrement
+Quand la page est reliee a GitHub (jeton avec « Contents : Read and write »), chaque modification est
+enregistree toute seule dans `data/manual.json`, environ 1,5 seconde apres. Si vous (ou votre partenaire)
+enregistrez en meme temps depuis deux appareils, les changements sont fusionnes : seul ce que VOUS avez modifie
+est applique sur la version du depot. Si l'enregistrement echoue, la barre du haut l'indique et propose de reessayer
+ou de telecharger une copie de `manual.json`. Sans jeton, la page garde le mode « telechargement ».
+Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit au plus 30 minutes apres.
 
 ## Format de manual.json
 - `characters` : `{id: {name, player, color}}` (`player` = compte forum de la joueuse)

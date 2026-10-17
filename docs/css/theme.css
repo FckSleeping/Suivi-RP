@@ -181,3 +181,8 @@ td.cell-nsfw:not(:empty) { background: #f6dde4; }
 
 /* ---------- Message d'information (ex. installation terminee) ---------- */
 .notice { padding: var(--space-small) var(--space); border-radius: var(--radius-small); background: var(--accent-soft); border: 1px solid var(--border); }
+
+/* ---------- Barre d'enregistrement : erreur ---------- */
+.save-bar.save-error { background: #f6d5d1; color: #6e211b; }
+.save-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+@media (prefers-color-scheme: dark) { .save-bar.save-error { background: #5a2823; color: #fbe3df; } }

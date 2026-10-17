@@ -268,7 +268,7 @@
         h("ol", {},
           h("li", {}, "GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token."),
           h("li", {}, "« Repository access » : Only select repositories → choisissez uniquement ce dépôt."),
-          h("li", {}, "« Permissions » → Contents : Read and write (lecture seule suffit pour regarder, l’écriture servira à enregistrer vos corrections)."),
+          h("li", {}, "« Permissions » → Contents : Read and write (indispensable pour que la page enregistre vos modifications toute seule)."),
           h("li", {}, "Collez le jeton ici. Il reste dans ce navigateur uniquement ; chaque appareil a besoin du sien.")),
         h("p", { class: "hint" }, "Sans jeton, vous pouvez aussi ouvrir les fichiers à la main :"),
         btn("Ouvrir forum.json, manual.json, status.json…", () => files.click(), "btn-small"), files));
@@ -308,8 +308,10 @@
     out.push(setupLinkCard());
     if (S.manual) {
       out.push(section("Vos corrections",
-        h("p", {}, S.dirty ? `${S.dirty} modification(s) pas encore enregistrée(s).` : "Aucune modification en attente."),
-        btn("Télécharger manual.json", RP.downloadManual, "btn-primary")));
+        RP.canSave()
+          ? h("p", {}, "Vos modifications s’enregistrent toutes seules dans le dépôt, quelques secondes après chaque changement.")
+          : h("p", {}, S.dirty ? `${S.dirty} modification(s) pas encore enregistrée(s).` : "Aucune modification en attente.", " Reliez la page à GitHub (ci-dessus) pour qu’elles s’enregistrent toutes seules."),
+        btn("Télécharger une copie de manual.json", RP.downloadManual)));
     }
     out.push(section("Apparence", h("p", {}, "Tout l’aspect se règle dans ", h("code", {}, "docs/css/theme.css"), " : couleurs et polices en haut du fichier (variables), puis tableaux, menus, étiquettes et animations. Ce fichier n’influence jamais le fonctionnement.")));
     return out;

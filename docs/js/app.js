@@ -17,11 +17,22 @@
 
   function renderBar() {
     const bar = document.getElementById("save-bar");
-    bar.hidden = !S.dirty;
-    if (!S.dirty) return;
-    bar.replaceChildren(
-      h("span", {}, `${S.dirty} modification(s) non enregistrée(s) — téléchargez manual.json puis remplacez data/manual.json dans le dépôt.`),
-      RP.btn("Télécharger manual.json", RP.downloadManual, "btn-primary btn-small"));
+    const st = S.saveStatus;
+    bar.hidden = !(S.dirty || st);
+    bar.classList.toggle("save-error", st === "error");
+    if (bar.hidden) return;
+    if (!RP.canSave()) {
+      bar.replaceChildren(
+        h("span", {}, `${S.dirty} modification(s) non enregistrée(s) — téléchargez manual.json puis remplacez data/manual.json dans le dépôt, ou reliez la page à GitHub (Paramètres) pour enregistrer automatiquement.`),
+        RP.btn("Télécharger manual.json", RP.downloadManual, "btn-primary btn-small"));
+    } else if (st === "error") {
+      bar.replaceChildren(h("span", {}, `Enregistrement impossible : ${S.saveError}`),
+        h("span", { class: "save-actions" }, RP.btn("Réessayer", RP.save, "btn-primary btn-small"), RP.btn("Télécharger manual.json", RP.downloadManual, "btn-small")));
+    } else if (st === "saved" && !S.dirty) {
+      bar.replaceChildren(h("span", {}, "Enregistré ✓"));
+    } else {
+      bar.replaceChildren(h("span", {}, st === "saving" ? "Enregistrement…" : "Modifications en attente d’enregistrement…"));
+    }
   }
 
   // Lien d'installation : https://…/#setup=<depot + jeton encodes>

@@ -3,10 +3,12 @@
   const C = window.RP_CONFIG;
   const RP = (window.RP = window.RP || {});
   const SETTINGS_KEY = "rp-settings"; // depot + jeton : uniquement dans CE navigateur
-  const state = (RP.state = { forum: null, manual: null, status: null, source: "", dirty: 0, error: "" });
+  const state = (RP.state = { forum: null, manual: null, base: null, status: null, source: "", dirty: 0, error: "", saveStatus: "", saveError: "" });
   const listeners = [];
   RP.onChange = (fn) => listeners.push(fn);
   const emit = () => listeners.forEach((f) => f());
+  let quiet = false;
+  const notify = () => { quiet = true; emit(); quiet = false; }; // met a jour la barre sans redessiner la page
 
   const FLAG_LABELS = {
     auteur_inconnu: "Auteur du dernier message introuvable",
@@ -95,7 +97,7 @@
     ["characters", "topics", "seen"].forEach((k) => (m[k] = m[k] || {}));
     m.schema = 2;
     d.forum.topics = d.forum.topics || {};
-    Object.assign(state, { forum: d.forum, manual: m, status: d.status, source: d.source, dirty: 0, error: "" });
+    Object.assign(state, { forum: d.forum, manual: m, base: JSON.parse(JSON.stringify(m)), status: d.status, source: d.source, dirty: 0, error: "", saveStatus: "", saveError: "" });
     emit();
   }
 
@@ -188,10 +190,9 @@
   RP.byRecent = (a, b) => (ms(b.last) || 0) - (ms(a.last) || 0);
 
   // ------------------------------------------------------------------ modifications (vos corrections)
-  let quiet = false;
-  const touch = (rerender = true) => { state.dirty++; quiet = !rerender; emit(); quiet = false; };
+  const touch = (rerender = true) => { state.dirty++; quiet = !rerender; emit(); quiet = false; scheduleSave(); };
   RP.isSilent = () => quiet;
-  const nextId = (prefix, obj) => { let i = 1; while (obj[`${prefix}${i}`]) i++; return `${prefix}${i}`; };
+  const nextId = (prefix, obj) => { let id; do { id = prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 4); } while (obj[id]); return id; };
   const clean = (o) => { Object.keys(o).forEach((k) => { const v = o[k]; if (v === undefined || v === null || v === "" || v === false || (Array.isArray(v) && !v.length) || (v && typeof v === "object" && !Array.isArray(v) && !Object.keys(v).length)) delete o[k]; }); return o; };
 
   // Ajout / modification d'un RP. Renvoie un message d'erreur, ou "".
@@ -243,7 +244,78 @@
     touch();
   };
 
-  RP.manualJson = () => JSON.stringify(sortKeys(state.manual), null, 1) + "\n";
+
+  // ------------------------------------------------------------------ enregistrement direct dans le depot
+  const manualText = (m) => JSON.stringify(sortKeys(m), null, 1) + "\n";
+  const b64enc = (str) => { const b = new TextEncoder().encode(str); let s = ""; for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode(...b.subarray(i, i + 8192)); return btoa(s); };
+  const b64dec = (b) => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, "")), (c) => c.charCodeAt(0)));
+  const gh = (s, path, opts = {}) => fetch(`https://api.github.com/repos/${s.repo}/contents/${path}`, {
+    cache: "no-store", ...opts,
+    headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${s.token}`, "X-GitHub-Api-Version": "2022-11-28", ...(opts.headers || {}) },
+  });
+
+  // Fusion a 3 : on part de la version du depot (peut-etre modifiee par l'autre joueuse entre-temps)
+  // et on y applique uniquement CE QUE VOUS avez change depuis votre chargement.
+  function merge3(base, local, remote) {
+    const out = JSON.parse(JSON.stringify(remote));
+    out.schema = 2;
+    ["characters", "topics", "seen"].forEach((col) => {
+      const b = base[col] || {}, l = local[col] || {}, r = (out[col] = out[col] || {});
+      new Set([...Object.keys(b), ...Object.keys(l)]).forEach((k) => {
+        if (JSON.stringify(l[k]) !== JSON.stringify(b[k])) { if (l[k] === undefined) delete r[k]; else r[k] = l[k]; }
+      });
+    });
+    return out;
+  }
+  RP.merge3 = merge3;
+
+  let saveTimer = null, saving = false;
+  RP.canSave = () => /^GitHub/.test(state.source || "");
+  function scheduleSave() {
+    if (!RP.canSave()) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => RP.save(), 1500);
+  }
+
+  RP.save = async function () {
+    clearTimeout(saveTimer);
+    if (!RP.canSave() || !state.dirty || saving) return;
+    saving = true; state.saveStatus = "saving"; state.saveError = ""; notify();
+    const s = RP.getSettings(), branch = s.branch || C.branch;
+    const mark = state.dirty, local = JSON.parse(JSON.stringify(state.manual));
+    let failed = false;
+    try {
+      let merged = null;
+      for (let attempt = 0; attempt < 3 && !merged; attempt++) {
+        const r = await gh(s, `data/manual.json?ref=${encodeURIComponent(branch)}`);
+        let remote = emptyManual(), sha;
+        if (r.status === 401 || r.status === 403) throw new Error("jeton refusé.");
+        if (r.ok) { const j = await r.json(); sha = j.sha; remote = Object.assign(emptyManual(), JSON.parse(b64dec(j.content))); }
+        else if (r.status !== 404) throw new Error(`GitHub a répondu HTTP ${r.status}.`);
+        const next = merge3(state.base, local, remote);
+        const put = await gh(s, "data/manual.json", { method: "PUT", body: JSON.stringify({ message: "Mise à jour de la liste (depuis la page)", content: b64enc(manualText(next)), branch, ...(sha ? { sha } : {}) }) });
+        if (put.ok) merged = next;
+        else if (put.status === 409 || put.status === 422) continue; // quelqu'un a enregistré entre-temps : on recommence
+        else if (put.status === 401 || put.status === 403 || put.status === 404) throw new Error("le jeton n’a pas le droit d’écrire dans ce dépôt (il faut « Contents : Read and write »).");
+        else throw new Error(`GitHub a répondu HTTP ${put.status}.`);
+      }
+      if (!merged) throw new Error("conflit répété avec un autre enregistrement, réessayez.");
+      state.base = JSON.parse(JSON.stringify(merged));
+      state.dirty = Math.max(0, state.dirty - mark);
+      state.saveStatus = "saved";
+      if (!state.dirty && JSON.stringify(merged) !== JSON.stringify(local)) { state.manual = merged; saving = false; emit(); } // l'autre joueuse avait modifie quelque chose
+      else notify();
+      setTimeout(() => { if (state.saveStatus === "saved") { state.saveStatus = ""; notify(); } }, 2500);
+    } catch (e) {
+      failed = true;
+      state.saveStatus = "error"; state.saveError = e.message || String(e); notify();
+    } finally {
+      saving = false;
+    }
+    if (!failed && state.dirty) scheduleSave(); // des modifications sont arrivees pendant l'enregistrement
+  };
+
+  RP.manualJson = () => manualText(state.manual);
   RP.downloadManual = () => {
     const url = URL.createObjectURL(new Blob([RP.manualJson()], { type: "application/json" }));
     const a = Object.assign(document.createElement("a"), { href: url, download: "manual.json" });
