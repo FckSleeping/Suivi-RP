@@ -330,3 +330,8 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 :root[data-theme="dark"] .picker-pop { background: rgba(36, 34, 52, 0.92); }
 
 .count, .page-title{display: none;}
+
+/* ---------- Pastilles de compteur (simples, non cliquables) ---------- */
+.tile-static { cursor: default; }
+.tile-static:hover { transform: none; background: var(--glass); }
+.tile-static:active { transform: none; }
