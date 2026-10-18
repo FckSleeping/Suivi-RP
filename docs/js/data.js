@@ -130,6 +130,8 @@
   RP.players = C.players;
   RP.playerLabel = (key) => (C.players.find((p) => p.key === key) || {}).label || key || "?";
   RP.playerOfGroup = (g) => (C.players.find((p) => p.group === g) || {}).key || null;
+  // « de Fanny » / « d'Ambre » (elision devant une voyelle)
+  RP.de = (label) => (/^[aeiouyàâäéèêëîïôöùûü]/i.test(label || "") ? `d’${label}` : `de ${label}`);
   RP.otherPlayer = (key) => (C.players.find((p) => p.key !== key) || {}).key || null;
 
   // Couleur « du forum » : la couleur de paroles la plus frequente du compte portant ce nom (relevee par la synchro)
@@ -186,12 +188,11 @@
     const lp = t && t.last_post;
     const author = lp && lp.author;
     const authorPlayer = author ? RP.playerOfGroup(author.group) : null;
-    const done = e.status === "termine";
 
     let turn = null;
     if (e.turn === "none") turn = null;
     else if (e.turn) turn = e.turn;
-    else if (!done && authorPlayer) turn = RP.otherPlayer(authorPlayer);
+    else if (authorPlayer) turn = RP.otherPlayer(authorPlayer);
 
     // Personnage de chaque joueuse : celui que vous avez choisi, sinon deviné d'après les comptes vus dans le sujet
     const charFor = (player) => {
@@ -210,13 +211,12 @@
       order: e.order || 0,
       chars: Object.fromEntries(C.players.map((p) => [p.key, charFor(p.key)])),
       nsfw: !!e.nsfw,
-      done,
       turn,
       last: lp ? lp.date : null,
       lastAuthor: author,
       count: (t && t.post_count) || 0,
       flags: (t && t.flags) || [],
-      unseen: !!(t && t.last_changed && lp && state.manual.seen[id] !== lp.post_id),
+      isNew: !!(t && t.new_reply), // pose par la synchro, retire par la synchro suivante
       note: e.note || "",
     };
   };
@@ -246,17 +246,12 @@
     state.manual.topics[id] = clean({
       order: prev.order || maxOrder + 1,
       url, title: (f.title || "").trim(), chars: clean({ ...f.chars }), nsfw: !!f.nsfw,
-      status: f.done ? "termine" : "", turn: f.turn || "", note: (f.note || "").trim(),
+      turn: f.turn || "", note: (f.note || "").trim(),
     });
     touch();
     return "";
   };
-  RP.deleteTopic = (id) => { delete state.manual.topics[id]; delete state.manual.seen[id]; touch(); };
-
-  RP.markSeen = (ids) => {
-    ids.forEach((id) => { const r = RP.enrich(id); if (r.t && r.t.last_post) state.manual.seen[id] = r.t.last_post.post_id; });
-    touch();
-  };
+  RP.deleteTopic = (id) => { delete state.manual.topics[id]; touch(); };
 
   RP.addCharacters = (names, player) => {
     names.forEach((name) => { state.manual.characters[nextId("c", state.manual.characters)] = { name, player }; });

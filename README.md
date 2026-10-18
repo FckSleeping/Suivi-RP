@@ -25,14 +25,26 @@ Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont dans
 (Settings > Secrets and variables > Actions) : `FORUM_USER` et `FORUM_PASSWORD`.
 
 ## Utiliser la page
-- **Personnages** : ajoutez des noms (plusieurs d'un coup possible), choisissez la joueuse ; chacun
-  recoit une couleur modifiable.
-- **RP** : « Ajouter un RP » = coller le lien du sujet, choisir le personnage de chacune, cocher NSFW
-  si besoin. Le titre est repris du lien (modifiable). Un RP sans lien (pas encore commence) est possible.
-  Colonne « Etat » = a qui le tour, deduit de l'auteur du dernier message (modifiable a la main).
-  « Supprimer » retire le RP de la liste (rien n'est touche sur le forum). « Termine » le masque par defaut.
-- Si le personnage n'est pas choisi, la page le reconnait d'apres les comptes qui ont ecrit dans le sujet
+Deux onglets seulement.
+- **Tableau de bord** : deux compteurs en haut (« Au tour de Fanny », « Au tour d'Ambre »), puis la liste des RP :
+  « Ajouter un RP » = coller le lien du sujet, choisir le personnage de chacune, cocher NSFW si besoin. Le titre est repris
+  du lien (modifiable). Un RP sans lien (pas encore commence) est possible. Colonne « Etat » = a qui le tour, deduit de
+  l'auteur du dernier message (modifiable a la main). L'etiquette « Nouvelle reponse » est posee par la synchro quand le
+  dernier message a change, et disparait toute seule a la synchro suivante : rien a valider. L'icone corbeille retire le RP
+  de la liste (rien n'est touche sur le forum) ; quand un RP est fini, on modifie simplement le lien/titre pour en suivre
+  un autre a la place.
+- **Parametres** : en premier la section **Personnages** (ajout de plusieurs noms d'un coup, joueuse, couleur de fond et de texte,
+  suppression), puis le dernier controle du forum, la connexion a GitHub, le lien d'installation et la copie de `manual.json`.
+  Les anciennes adresses `#/rp` et `#/characters` redirigent vers ces deux pages.
+- Si le personnage n'est pas choisi dans un RP, la page le reconnait d'apres les comptes qui ont ecrit dans le sujet
   (affiche en italique), a condition que le nom du personnage soit celui du compte.
+- `manual.json` modifie a la main : la page tolere les fautes courantes (joueuse ecrite « Fanny » au lieu du nom de compte,
+  entrees abimees ignorees). Un personnage dont la joueuse reste inconnue apparait dans « Personnages a rattacher a une joueuse ».
+  Si une page plante, elle affiche le message d'erreur au lieu de rester vide.
+
+## Mise a jour de la page
+`docs/index.html` ajoute `?v=...` aux fichiers CSS et JS : changez ce numero a chaque mise a jour pour que les navigateurs ne
+melangent pas d'anciens et de nouveaux fichiers (GitHub Pages garde les fichiers en cache quelques minutes).
 
 ## Couleurs des personnages
 La synchro releve la couleur des dialogues dans les messages (elements `quote`, `.vrmtart > span`, `.kitto > span`,
@@ -50,11 +62,13 @@ Dans `data/manual.json`, chaque personnage peut avoir un champ `text_color` : la
 Formats acceptes : `#rrggbb` ou `#rgb`. Sans `text_color` (ou si la valeur est invalide), le texte est calcule
 automatiquement : meme teinte que le fond, en plus clair ou plus fonce (reglage `pillText` dans `docs/js/config.js` :
 `"tone"` ou `"contrast"` pour noir/blanc). On peut aussi la choisir sur la page Personnages (colonne « Texte »).
+Le bouton « Figer les couleurs de texte » (page Personnages) ecrit dans `manual.json` la couleur calculee de chaque
+personnage qui n'a pas de `text_color`, pour pouvoir la retoucher a la main ; « Texte en automatique » les efface toutes.
 
 ## Lancer la synchro
 Onglet Actions > « Synchronisation du forum » > Run workflow.
 En local : `python scripts/sync.py` (avec `FORUM_USER` / `FORUM_PASSWORD` dans l'environnement).
-Options : `--only 176` (un seul sujet), `--all` (relire aussi les RP termines), `--dry-run`.
+Options : `--only 176` (un seul sujet), `--dry-run`.
 
 ## Publier la page
 Seul `docs/` est publie (Settings > Pages > « Deploy from a branch » > `main`, dossier `/docs` ;
@@ -78,6 +92,5 @@ Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit
 ## Format de manual.json
 - `characters` : `{id: {name, player, color, text_color}}` (`player` = compte forum de la joueuse ; `color` facultative :
   sans elle, la couleur est relevee sur le forum, voir ci-dessous)
-- `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, status ("termine"),
+- `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw,
   turn (compte, ou "none"), note}}`
-- `seen` : `{id_rp: dernier_message_vu}` (pour le badge « Nouveau »)

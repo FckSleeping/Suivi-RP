@@ -4,7 +4,8 @@ Synchronisation du suivi des RP de Sweeter Weather (LECTURE SEULE sur le forum).
 
 Le script ne lit QUE les RP de votre liste (data/manual.json, champ « topics »).
 Pour chacun, il relit la derniere page du sujet : dernier message, auteur, date,
-nombre de messages, et les comptes qui ont ecrit. Il ecrit data/forum.json et
+nombre de messages, et les comptes qui ont ecrit. Un sujet dont le dernier message a change depuis
+le passage precedent recoit « new_reply » ; l'etiquette disparait au passage suivant. Il ecrit data/forum.json et
 data/status.json.
 
 Garanties
@@ -243,14 +244,12 @@ def run(args, forum, log=print):
         log(f"  ! {where} : {what}")
 
     # Les RP de la liste : numero de sujet -> chemin
-    paths, finished = {}, set()
+    paths = {}
     for entry in (manual.get("topics") or {}).values():
         tid = topic_id(entry.get("url"))
         if not tid:
             continue  # RP prevu mais pas encore commence (pas de lien)
         paths[tid] = clean_path(entry["url"])
-        if entry.get("status") == "termine":
-            finished.add(tid)
 
     # On repart des donnees deja connues (pour ne relire que le necessaire)
     topics = {}
@@ -262,7 +261,7 @@ def run(args, forum, log=print):
         prev["path"] = path
         topics[tid] = prev
 
-    targets = [t for t in topics if (t not in finished or args.all) and (not args.only or t in args.only)]
+    targets = [t for t in topics if not args.only or t in args.only]
     log(f"\n=== Lecture de {len(targets)} RP sur {len(topics)} dans la liste ===")
     for i, tid in enumerate(targets, 1):
         t = topics[tid]
@@ -276,6 +275,7 @@ def run(args, forum, log=print):
             if before and after != before:
                 t["previous_last_post_id"] = before
                 t["last_changed"] = now_utc()
+                t["new_reply"] = True  # non conserve d'un passage a l'autre : l'etiquette disparait a la synchro suivante
                 status["topics_with_new_reply"] += 1
                 log(f"   t{tid} : nouvelle reponse")
         except Exception as e:
@@ -298,7 +298,6 @@ def main():
     ap = argparse.ArgumentParser(description="Synchronisation lecture seule du forum Sweeter Weather")
     ap.add_argument("--base", default=os.environ.get("FORUM_BASE") or "https://sweeter-weather.forumactif.com")
     ap.add_argument("--only", action="append", default=[], help="ne lire que ce numero de sujet (test), repetable")
-    ap.add_argument("--all", action="store_true", help="lire aussi les RP marques « termines »")
     ap.add_argument("--delay", type=float, default=1.0, help="pause entre deux pages (secondes)")
     ap.add_argument("--dry-run", action="store_true", help="ne rien ecrire")
     args = ap.parse_args()

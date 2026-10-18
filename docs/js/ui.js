@@ -51,7 +51,7 @@
   const section = (title, ...kids) => h("section", { class: "card" }, h("h2", { class: "card-title" }, title), ...kids);
   const goto = (page) => { location.hash = `#/${page}`; };
 
-  const ui = (RP.ui = { rp: { q: "", char: "", turn: "", view: "", nsfw: false, done: false, sort: "order", dir: 1 } });
+  const ui = (RP.ui = { rp: { q: "", char: "", turn: "", nsfw: false, sort: "order", dir: 1 } });
 
   // ------------------------------------------------------------------ dialogue
   const dlg = () => document.getElementById("dialog");
@@ -82,19 +82,8 @@
     return `Dernière réponse de ${x.lastAuthor ? x.lastAuthor.name : "auteur inconnu"} · ${RP.fmtAgo(x.last) || RP.fmtDate(x.last)}`;
   }
 
-  function item(x, ...actions) {
-    return h("li", { class: "item" },
-      h("div", { class: "item-main" },
-        h("div", { class: "item-title" }, titleLink(x), x.unseen ? badge("Nouveau", "new") : null, flagBadges(x)),
-        h("div", { class: "chars" }, RP.players.map((p) => x.chars[p.key] ? pill(x.chars[p.key]) : null)),
-        h("div", { class: "item-meta" }, lastLine(x), x.turn ? ` · au tour de ${RP.playerLabel(x.turn)}` : "")),
-      h("div", { class: "item-actions" }, actions));
-  }
-
   // ------------------------------------------------------------------ TABLEAU DE BORD = pastilles + liste des RP
-  const isFlagged = (x) => x.flags.some((f) => f !== "jamais_lu") || (x.url && x.flags.includes("jamais_lu") && S.status);
-
-  function dashboard() {
+    function dashboard() {
     const f = ui.rp;
     const wrap = h("div", {});
     const box = h("div", { class: "table-wrap" });
@@ -106,12 +95,9 @@
 
     function drawTable() {
       const items = RP.rows().filter((x) => {
-        if (x.done && !f.done) return false;
         if (f.q && !norm([x.title, ...RP.players.map((p) => (x.chars[p.key] || {}).name)].join(" ")).includes(norm(f.q))) return false;
         if (f.char && !RP.players.some((p) => x.chars[p.key] && x.chars[p.key].id === f.char)) return false;
         if (f.turn && x.turn !== f.turn) return false;
-        if (f.view === "new" && !x.unseen) return false;
-        if (f.view === "check" && !isFlagged(x)) return false;
         if (f.nsfw && !x.nsfw) return false;
         return true;
       });
@@ -125,32 +111,28 @@
         items.length
           ? h("table", { class: "table tracker" },
               h("thead", {}, h("tr", {}, th("#", "order"), th("Titre", "title"), RP.players.map((p) => th(`Personnage ${p.label}`, p.key)), h("th", {}, "Lien"), th("État", "turn"), h("th", {}, "NSFW"), h("th", {}, ""))),
-              h("tbody", {}, items.map((x, i) => h("tr", { class: (x.unseen ? "row-new " : "") + (x.done ? "row-done" : "") },
+              h("tbody", {}, items.map((x, i) => h("tr", { class: x.isNew ? "row-new" : "" },
                 h("td", { class: "cell-num" }, i + 1),
-                h("td", { class: "cell-title" }, h("strong", {}, x.title), x.unseen ? badge("Nouveau", "new") : null, flagBadges(x), x.done ? badge("Terminé") : null,
+                h("td", { class: "cell-title" }, h("strong", {}, x.title), x.isNew ? badge("Nouvelle réponse", "new") : null, flagBadges(x),
                   x.note ? h("div", { class: "note" }, x.note) : null, h("div", { class: "sub" }, x.last ? lastLine(x) : "")),
                 RP.players.map((p) => h("td", {}, pill(x.chars[p.key]))),
                 h("td", { class: "cell-link" }, x.url ? h("a", { class: "icon-link", href: x.url, target: "_blank", rel: "noopener noreferrer", title: "Ouvrir le sujet", "aria-label": "Ouvrir le sujet" }, icon("link")) : ""),
                 h("td", {}, turnPill(x.turn)),
                 h("td", { class: "cell-nsfw" }, x.nsfw ? "♥" : ""),
                 h("td", { class: "cell-actions" },
-                  x.unseen ? iconBtn("check", "Marquer comme vu", () => RP.markSeen([x.id]), "btn-small") : null,
                   iconBtn("pencil", "Modifier", () => topicDialog(x.id), "btn-small"),
                   iconBtn("trash", "Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")))))
             )
           : h("div", { class: "empty-box" },
               empty(RP.rows().length ? "Aucun RP ne correspond à ces filtres." : "Aucun RP pour l’instant : cliquez sur « Ajouter un RP »."),
-              RP.rows().length ? btn("Effacer les filtres", () => { Object.assign(f, { q: "", char: "", turn: "", view: "", nsfw: false, done: false }); build(); }, "btn-small") : null),
+              RP.rows().length ? btn("Effacer les filtres", () => { Object.assign(f, { q: "", char: "", turn: "", nsfw: false }); build(); }, "btn-small") : null),
         h("p", { class: "count" }, `${items.length} RP`));
     }
 
-    // Pastilles + barre de filtres (redessinees quand un filtre change les chiffres ou la selection)
+    // Pastilles (simples compteurs) + barre de filtres
     function build() {
-      const live = RP.rows().filter((x) => !x.done);
-      const unseen = live.filter((x) => x.unseen);
-      const tile = (n, label, active, onclick) => h("button", { type: "button", class: "tile" + (active ? " tile-active" : ""), onclick },
-        h("span", { class: "tile-n" }, n), h("span", { class: "tile-l" }, label));
-      const toggle = (k, v) => () => { f[k] = f[k] === v ? "" : v; build(); };
+      const rows = RP.rows();
+      const tile = (n, label) => h("div", { class: "tile tile-static" }, h("span", { class: "tile-n" }, n), h("span", { class: "tile-l" }, label));
 
       const welcome = !RP.rows().length && !RP.characters().length
         ? section("Pour commencer",
@@ -159,19 +141,15 @@
         : null;
 
       const tiles = h("div", { class: "tiles" },
-        RP.players.map((p) => tile(live.filter((x) => x.turn === p.key).length, `Au tour de ${p.label}`, f.turn === p.key, toggle("turn", p.key))),
-        tile(unseen.length, "Nouvelles réponses", f.view === "new", toggle("view", "new")),
-        tile(live.filter(isFlagged).length, "À vérifier", f.view === "check", toggle("view", "check")));
+        RP.players.map((p) => tile(rows.filter((x) => x.turn === p.key).length, `Au tour ${RP.de(p.label)}`)));
 
       const bar = h("div", { class: "filters" },
         h("input", { class: "field-input", type: "search", placeholder: "Rechercher un titre ou un personnage…", value: f.q, oninput: (e) => { f.q = e.target.value; drawTable(); } }),
         h("select", { class: "field-input", value: f.char, onchange: (e) => { f.char = e.target.value; drawTable(); } },
           h("option", { value: "" }, "Tous les personnages"), RP.characters().map((c) => h("option", { value: c.id }, c.name))),
-        h("select", { class: "field-input", value: f.turn, onchange: (e) => { f.turn = e.target.value; build(); } },
-          h("option", { value: "" }, "Tous les états"), RP.players.map((p) => h("option", { value: p.key }, `Au tour de ${p.label}`))),
+        h("select", { class: "field-input", value: f.turn, onchange: (e) => { f.turn = e.target.value; drawTable(); } },
+          h("option", { value: "" }, "Tous les états"), RP.players.map((p) => h("option", { value: p.key }, `Au tour ${RP.de(p.label)}`))),
         h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.nsfw, onchange: (e) => { f.nsfw = e.target.checked; drawTable(); } }), h("span", {}, "NSFW")),
-        h("label", { class: "field-check" }, h("input", { type: "checkbox", checked: f.done, onchange: (e) => { f.done = e.target.checked; drawTable(); } }), h("span", {}, "Voir les terminés")),
-        unseen.length > 1 ? btn("Tout marquer comme vu", () => RP.markSeen(unseen.map((x) => x.id)), "btn-small", "check") : null,
         btn("Ajouter un RP", () => topicDialog(), "btn-primary", "plus"));
 
       wrap.replaceChildren(...[welcome, tiles, bar, box].filter(Boolean));
@@ -206,10 +184,9 @@
       return h("label", { class: "field" }, h("span", { class: "field-label" }, `Personnage de ${p.label}`), selects[p.key]);
     });
     const nsfw = h("input", { type: "checkbox", checked: !!e.nsfw });
-    const done = h("input", { type: "checkbox", checked: e.status === "termine" });
     const turn = h("select", { class: "field-input", value: e.turn || "" },
       h("option", { value: "" }, "Automatique (d’après le dernier message)"),
-      RP.players.map((p) => h("option", { value: p.key }, `Au tour de ${p.label}`)), h("option", { value: "none" }, "Aucun (-)"));
+      RP.players.map((p) => h("option", { value: p.key }, `Au tour ${RP.de(p.label)}`)), h("option", { value: "none" }, "Aucun (-)"));
     const note = h("textarea", { class: "field-input", rows: 2, placeholder: "Facultatif" }, e.note || "");
     const err = h("p", { class: "error", hidden: true });
     const noChars = !RP.characters().length;
@@ -221,7 +198,6 @@
       charFields,
       noChars ? h("div", {}, h("p", { class: "hint" }, "Aucun personnage dans la liste : ajoutez-les d’abord."), btn("Ouvrir Paramètres › Personnages", () => { closeDialog(); goto("characters"); }, "btn-small")) : null,
       h("label", { class: "field field-check" }, nsfw, h("span", {}, "NSFW ♥")),
-      h("label", { class: "field field-check" }, done, h("span", {}, "RP terminé")),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "État (à qui le tour)"), turn),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Note"), note),
       err,
@@ -230,7 +206,7 @@
         btn("Annuler", closeDialog),
         btn(id ? "Enregistrer" : "Ajouter", () => {
           const msg = RP.saveTopic(id, {
-            url: url.value, title: title.value, nsfw: nsfw.checked, done: done.checked, turn: turn.value, note: note.value,
+            url: url.value, title: title.value, nsfw: nsfw.checked, turn: turn.value, note: note.value,
             chars: Object.fromEntries(RP.players.map((p) => [p.key, selects[p.key].value])),
           });
           if (msg) { err.textContent = msg; err.hidden = false; } else closeDialog();
