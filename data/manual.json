@@ -243,7 +243,11 @@
   "rmvc9rhdtr9": "2163",
   "rmvc9rufis8": "2164"
  },
- "ships": {},
+ "ships": {
+  "c5|c25": {
+   "name": "Abellia"
+  }
+ },
  "topics": {
   "r1": {
    "chars": {
