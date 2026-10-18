@@ -35,7 +35,7 @@
     "date": "2026-06-21T23:26",
     "post_id": "1651"
    },
-   "last_read": "2026-10-18T15:31:07Z",
+   "last_read": "2026-10-18T16:01:20Z",
    "path": "/t156-louder-than-bombs-asmodee",
    "post_count": 12
   },
@@ -74,7 +74,7 @@
     "date": "2026-10-17T23:52",
     "post_id": "2160"
    },
-   "last_read": "2026-10-18T15:31:09Z",
+   "last_read": "2026-10-18T16:01:22Z",
    "path": "/t176-blinding-light-x-fleur",
    "post_count": 14,
    "previous_last_post_id": "2157"
@@ -113,7 +113,7 @@
     "date": "2026-10-07T22:36",
     "post_id": "2131"
    },
-   "last_read": "2026-10-18T15:31:12Z",
+   "last_read": "2026-10-18T16:01:25Z",
    "path": "/t183-sweet-dreams-made-of-lies-janko",
    "post_count": 5
   },
@@ -151,7 +151,7 @@
     "date": "2026-10-13T22:43",
     "post_id": "2142"
    },
-   "last_read": "2026-10-18T15:31:10Z",
+   "last_read": "2026-10-18T16:01:24Z",
    "path": "/t184-skull-crack-maiween",
    "post_count": 3
   },
@@ -189,7 +189,7 @@
     "date": "2026-10-10T23:55",
     "post_id": "2136"
    },
-   "last_read": "2026-10-18T15:31:10Z",
+   "last_read": "2026-10-18T16:01:23Z",
    "path": "/t185-never-ending-violence-x-wade",
    "post_count": 6
   },
@@ -227,7 +227,7 @@
     "date": "2026-06-21T23:40",
     "post_id": "1658"
    },
-   "last_read": "2026-10-18T15:31:14Z",
+   "last_read": "2026-10-18T16:01:28Z",
    "path": "/t195-romantic-homicide",
    "post_count": 7
   },
@@ -265,7 +265,7 @@
     "date": "2026-06-21T23:38",
     "post_id": "1657"
    },
-   "last_read": "2026-10-18T15:31:13Z",
+   "last_read": "2026-10-18T16:01:26Z",
    "path": "/t196-pretty-distraction-kavish",
    "post_count": 4
   },
@@ -292,20 +292,22 @@
     "post_id": "1578"
    },
    "first_seen": "2026-10-17T11:01:01Z",
-   "flags": [],
+   "flags": [
+    "auteur_inconnu",
+    "date_illisible"
+   ],
+   "last_changed": "2026-10-18T16:01:19Z",
    "last_page_path": "/t197-nightmares-on-repeat-lupo",
    "last_post": {
-    "author": {
-     "group": "4",
-     "name": "P. Jewell O'Doherty",
-     "uid": "14"
-    },
-    "date": "2026-10-03T19:16",
-    "post_id": "2125"
+    "author": null,
+    "date": null,
+    "post_id": "469713"
    },
-   "last_read": "2026-10-18T15:31:06Z",
+   "last_read": "2026-10-18T16:01:19Z",
+   "new_reply": true,
    "path": "/t197-nightmares-on-repeat-lupo",
-   "post_count": 11
+   "post_count": 12,
+   "previous_last_post_id": "2125"
   },
   "203": {
    "authors": [
@@ -341,7 +343,7 @@
     "date": "2026-06-21T23:42",
     "post_id": "1659"
    },
-   "last_read": "2026-10-18T15:31:15Z",
+   "last_read": "2026-10-18T16:01:28Z",
    "path": "/t203-same-old-love-belial",
    "post_count": 6
   },
@@ -379,7 +381,7 @@
     "date": "2026-06-21T23:49",
     "post_id": "1660"
    },
-   "last_read": "2026-10-18T15:31:15Z",
+   "last_read": "2026-10-18T16:01:29Z",
    "path": "/t204-telling-fairy-tales-milton",
    "post_count": 2
   },
@@ -418,7 +420,7 @@
     "date": "2026-10-18T00:29",
     "post_id": "2161"
    },
-   "last_read": "2026-10-18T15:31:03Z",
+   "last_read": "2026-10-18T16:01:16Z",
    "path": "/t205-the-way-you-bleed-thetis",
    "post_count": 8,
    "previous_last_post_id": "2138"
@@ -447,21 +449,22 @@
    },
    "first_seen": "2026-10-17T11:01:01Z",
    "flags": [],
-   "last_changed": "2026-10-18T15:31:17Z",
+   "last_changed": "2026-10-18T16:01:30Z",
    "last_page_path": "/t208p45-le-monde-par-sa-fenetre-elowen",
    "last_post": {
     "author": {
-     "group": "4",
-     "name": "Whiskey O. Hennessy",
-     "uid": "159"
+     "group": "3",
+     "name": "Elowen Corvin",
+     "uid": "158"
     },
-    "date": "2026-10-18T17:07",
-    "post_id": "2163"
+    "date": "2026-10-18T17:54",
+    "post_id": "2166"
    },
-   "last_read": "2026-10-18T15:31:17Z",
+   "last_read": "2026-10-18T16:01:30Z",
+   "new_reply": true,
    "path": "/t208-le-monde-par-sa-fenetre-elowen",
-   "post_count": 51,
-   "previous_last_post_id": "2159"
+   "post_count": 52,
+   "previous_last_post_id": "2163"
   },
   "214": {
    "authors": [
@@ -497,7 +500,7 @@
     "date": "2026-10-04T20:24",
     "post_id": "2129"
    },
-   "last_read": "2026-10-18T15:31:19Z",
+   "last_read": "2026-10-18T16:01:32Z",
    "path": "/t214-running-through-you-noel",
    "post_count": 5
   },
@@ -525,21 +528,22 @@
    },
    "first_seen": "2026-10-17T11:01:01Z",
    "flags": [],
-   "last_changed": "2026-10-18T15:31:18Z",
+   "last_changed": "2026-10-18T16:01:31Z",
    "last_page_path": "/t215-seven-minutes-x-spindle",
    "last_post": {
     "author": {
-     "group": "3",
-     "name": "Mallorie Deschamps",
-     "uid": "160"
+     "group": "4",
+     "name": "H. Yuna Min-Park",
+     "uid": "161"
     },
-    "date": "2026-10-18T17:09",
-    "post_id": "2164"
+    "date": "2026-10-18T17:33",
+    "post_id": "2165"
    },
-   "last_read": "2026-10-18T15:31:18Z",
+   "last_read": "2026-10-18T16:01:31Z",
+   "new_reply": true,
    "path": "/t215-seven-minutes-x-spindle",
-   "post_count": 9,
-   "previous_last_post_id": "2140"
+   "post_count": 10,
+   "previous_last_post_id": "2164"
   },
   "216": {
    "authors": [
@@ -575,7 +579,7 @@
     "date": "2026-10-15T17:17",
     "post_id": "2155"
    },
-   "last_read": "2026-10-18T15:31:07Z",
+   "last_read": "2026-10-18T16:01:21Z",
    "path": "/t216-take-my-hand-cody",
    "post_count": 5
   },
@@ -614,7 +618,7 @@
     "date": "2026-10-18T15:39",
     "post_id": "2162"
    },
-   "last_read": "2026-10-18T15:31:01Z",
+   "last_read": "2026-10-18T16:01:14Z",
    "path": "/t217-let-s-fall-in-love-for-the-night-helios",
    "post_count": 7,
    "previous_last_post_id": "2158"
@@ -653,7 +657,7 @@
     "date": "2026-06-21T23:13",
     "post_id": "1646"
    },
-   "last_read": "2026-10-18T15:31:02Z",
+   "last_read": "2026-10-18T16:01:15Z",
    "path": "/t30-eternally-yours-narcisse",
    "post_count": 12
   },
@@ -691,7 +695,7 @@
     "date": "2026-06-21T23:23",
     "post_id": "1649"
    },
-   "last_read": "2026-10-18T15:31:05Z",
+   "last_read": "2026-10-18T16:01:18Z",
    "path": "/t44-how-you-like-that-jewell-18",
    "post_count": 23
   },
@@ -729,7 +733,7 @@
     "date": "2026-10-08T23:15",
     "post_id": "2133"
    },
-   "last_read": "2026-10-18T15:31:00Z",
+   "last_read": "2026-10-18T16:01:13Z",
    "path": "/t86-hell-of-a-good-time-felicy",
    "post_count": 31
   },
@@ -767,7 +771,7 @@
     "date": "2026-10-11T18:16",
     "post_id": "2139"
    },
-   "last_read": "2026-10-18T15:31:04Z",
+   "last_read": "2026-10-18T16:01:17Z",
    "path": "/t93-meant-to-be-octavia",
    "post_count": 43
   }
