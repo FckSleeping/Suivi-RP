@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 SCHEMA = 2
 PLAYERS = p.PLAYERS  # groupe -> compte joueuse ("3": chatondelalune, "4": fcksleeping)
-KEEP = ("first_seen", "path", "created", "last_post", "post_count", "last_page_path",
+KEEP = ("diag", "first_seen", "path", "created", "last_post", "post_count", "last_page_path",
         "authors", "last_read", "last_changed", "previous_last_post_id")
 
 
@@ -167,6 +167,50 @@ def slim_post(post):
     }
 
 
+def _post_info(pid, el):
+    """Auteur et date d'un element « message » (meme logique que le prototype)."""
+    author = None
+    for a in el.find_all("a", href=True):
+        m = re.match(r"^(?:https?://[^/]+)?/u(\d+)(?:[^\d]|$)", a["href"])
+        if m and a.get_text(strip=True):
+            author = {"uid": m.group(1), "name": a.get_text(strip=True), "group": p.link_group(a)}
+            break
+    tm = el.find("time")
+    raw = (tm.get("datetime") or tm.get_text(strip=True)) if tm else None
+    if not raw:
+        m = p.DATE_RE.search(el.get_text(" ", strip=True))
+        raw = m.group(0) if m else None
+    iso = raw if raw and re.match(r"\d{4}-\d{2}-\d{2}T", raw) else p.parse_fr_date(raw)
+    return {"post_id": pid, "author": author, "date_raw": raw, "date": iso}
+
+
+def parse_posts_clean(soup):
+    """Messages d'une page, sans les faux messages.
+    Le prototype prend pour un message tout element dont l'id ressemble a « p123 » : un habillage de RP
+    ou un element parasite portant un tel id devenait un faux « dernier message » (sans auteur ni date).
+    Ici : on garde les elements les plus exterieurs, puis ceux qui ont un auteur ou une date.
+    Renvoie (messages, diagnostic) ; le diagnostic ne contient que des comptes et des noms de balises."""
+    cands = soup.find_all(id=re.compile(r"^p\d+$"))
+    ids = {id(c) for c in cands}
+    outer = [c for c in cands if not any(id(par) in ids for par in c.parents)]
+    posts, seen = [], set()
+    for el in outer:
+        pid = el["id"][1:]
+        if pid not in seen:
+            seen.add(pid)
+            posts.append((el, _post_info(pid, el)))
+    if not posts:  # autre theme : repli sur la lecture du prototype
+        posts = [(None, x) for x in p.parse_posts(soup)]
+    good = [x for x in posts if x[1]["author"] or x[1]["date"]]
+    kept = good or posts
+    last_el = kept[-1][0] if kept else None
+    diag = {"candidats": len(cands), "externes": len(outer), "retenus": len(kept),
+            "avec_auteur": sum(1 for _, x in kept if x["author"]), "avec_date": sum(1 for _, x in kept if x["date"])}
+    if last_el is not None:
+        diag["dernier"] = {"balise": last_el.name, "classes": last_el.get("class") or []}
+    return [x for _, x in kept], diag
+
+
 def read_topic(forum, tid, t):
     """Lit la derniere page (et la premiere si la creation est inconnue). Modifie t."""
     path = t["path"] if not t.get("created") else (t.get("last_page_path") or t["path"])
@@ -180,7 +224,7 @@ def read_topic(forum, tid, t):
                 path, retried = t["path"], True
                 continue
             raise RuntimeError(f"http_{r.status_code}")
-        posts = p.parse_posts(soup)
+        posts, diag = parse_posts_clean(soup)
         for post in posts:
             a = post["author"]
             if a and a["group"] in PLAYERS:
@@ -210,11 +254,23 @@ def read_topic(forum, tid, t):
     if first and not t.get("created"):
         t["created"] = slim_post(first[0])
     t["last_post"] = slim_post(posts[-1])
+    if not posts[-1]["author"] or not posts[-1]["date"]:
+        t["diag"] = diag  # aide au depannage : ce qui a ete vu sur la page (aucun texte du forum)
+    else:
+        t.pop("diag", None)
     t["post_count"] = cur + len(posts)
     t["last_page_path"] = path
     for uid, cnt in counts.items():
         authors[uid]["color"] = cnt.most_common(1)[0][0]
     t["authors"] = sorted(authors.values(), key=lambda a: a["uid"])
+
+
+def is_newer(after, before):
+    """Les numeros de messages augmentent avec le temps : « nouvelle reponse » = numero plus grand."""
+    try:
+        return int(after) > int(before)
+    except (TypeError, ValueError):
+        return after != before
 
 
 def compute_flags(t):
@@ -272,7 +328,7 @@ def run(args, forum, log=print):
             t.pop("last_error", None)
             status["topics_read"] += 1
             after = t["last_post"]["post_id"]
-            if before and after != before:
+            if before and is_newer(after, before) and t["last_post"].get("author"):
                 t["previous_last_post_id"] = before
                 t["last_changed"] = now_utc()
                 t["new_reply"] = True  # non conserve d'un passage a l'autre : l'etiquette disparait a la synchro suivante

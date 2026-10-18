@@ -106,6 +106,7 @@
     Object.keys(m.topics).forEach((id) => {
       const e = m.topics[id];
       if (!e || typeof e !== "object" || Array.isArray(e)) { delete m.topics[id]; return; }
+      delete e.turn; // ancien choix manuel de l'etat : abandonne, l'etat est toujours automatique
       if (!e.chars || typeof e.chars !== "object" || Array.isArray(e.chars)) delete e.chars;
       else Object.keys(e.chars).forEach((p) => { const k = playerKey(p); if (k !== p) { e.chars[k] = e.chars[p]; delete e.chars[p]; } });
     });
@@ -189,10 +190,8 @@
     const author = lp && lp.author;
     const authorPlayer = author ? RP.playerOfGroup(author.group) : null;
 
-    let turn = null;
-    if (e.turn === "none") turn = null;
-    else if (e.turn) turn = e.turn;
-    else if (authorPlayer) turn = RP.otherPlayer(authorPlayer);
+    // A qui le tour : toujours deduit de l'auteur du dernier message (« - » tant qu'il est inconnu)
+    const turn = authorPlayer ? RP.otherPlayer(authorPlayer) : null;
 
     // Personnage de chaque joueuse : celui que vous avez choisi, sinon deviné d'après les comptes vus dans le sujet
     const charFor = (player) => {
@@ -246,7 +245,7 @@
     state.manual.topics[id] = clean({
       order: prev.order || maxOrder + 1,
       url, title: (f.title || "").trim(), chars: clean({ ...f.chars }), nsfw: !!f.nsfw,
-      turn: f.turn || "", note: (f.note || "").trim(),
+      note: (f.note || "").trim(),
     });
     touch();
     return "";

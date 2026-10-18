@@ -75,7 +75,8 @@
   }
   const turnPill = (key) => (key ? h("span", { class: `pill pill-turn player-${key}` }, RP.playerLabel(key)) : h("span", { class: "pill pill-empty" }, "-"));
   const titleLink = (x) => (x.url ? h("a", { class: "topic-link", href: x.url, target: "_blank", rel: "noopener noreferrer" }, x.title) : h("span", {}, x.title));
-  const flagBadges = (x) => x.flags.map((f) => badge("À vérifier", "flag", RP.flagLabel(f)));
+  // Une seule etiquette, la survoler donne toutes les raisons
+  const flagBadges = (x) => (x.flags.length ? badge("À vérifier", "flag", x.flags.map(RP.flagLabel).join("\n")) : null);
 
   function lastLine(x) {
     if (!x.last && !x.lastAuthor) return "Pas encore lu";
@@ -184,9 +185,6 @@
       return h("label", { class: "field" }, h("span", { class: "field-label" }, `Personnage de ${p.label}`), selects[p.key]);
     });
     const nsfw = h("input", { type: "checkbox", checked: !!e.nsfw });
-    const turn = h("select", { class: "field-input", value: e.turn || "" },
-      h("option", { value: "" }, "Automatique (d’après le dernier message)"),
-      RP.players.map((p) => h("option", { value: p.key }, `Au tour ${RP.de(p.label)}`)), h("option", { value: "none" }, "Aucun (-)"));
     const note = h("textarea", { class: "field-input", rows: 2, placeholder: "Facultatif" }, e.note || "");
     const err = h("p", { class: "error", hidden: true });
     const noChars = !RP.characters().length;
@@ -198,7 +196,6 @@
       charFields,
       noChars ? h("div", {}, h("p", { class: "hint" }, "Aucun personnage dans la liste : ajoutez-les d’abord."), btn("Ouvrir Paramètres › Personnages", () => { closeDialog(); goto("characters"); }, "btn-small")) : null,
       h("label", { class: "field field-check" }, nsfw, h("span", {}, "NSFW ♥")),
-      h("label", { class: "field" }, h("span", { class: "field-label" }, "État (à qui le tour)"), turn),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Note"), note),
       err,
       h("div", { class: "dialog-actions" },
@@ -206,7 +203,7 @@
         btn("Annuler", closeDialog),
         btn(id ? "Enregistrer" : "Ajouter", () => {
           const msg = RP.saveTopic(id, {
-            url: url.value, title: title.value, nsfw: nsfw.checked, turn: turn.value, note: note.value,
+            url: url.value, title: title.value, nsfw: nsfw.checked, note: note.value,
             chars: Object.fromEntries(RP.players.map((p) => [p.key, selects[p.key].value])),
           });
           if (msg) { err.textContent = msg; err.hidden = false; } else closeDialog();
