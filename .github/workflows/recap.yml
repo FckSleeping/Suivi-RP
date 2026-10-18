@@ -1,0 +1,43 @@
+name: Recap des RP archives
+
+# Une fois par jour (le recap d'un RP termine ne change pas) et a la demande
+# (onglet Actions > Run workflow). Sans RP archive a traiter, le script s'arrete tout de suite.
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recap
+  cancel-in-progress: false
+
+jobs:
+  recap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Rediger les recaps
+        env:
+          FORUM_USER: ${{ secrets.FORUM_USER }}
+          FORUM_PASSWORD: ${{ secrets.FORUM_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RECAP_MODEL: ${{ vars.RECAP_MODEL }}
+        run: python scripts/recap.py
+      - name: Enregistrer les recaps
+        run: |
+          [ -f data/recaps.json ] || exit 0
+          git config user.name "recap-rp"
+          git config user.email "recap-rp@users.noreply.github.com"
+          git add data/recaps.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Recap des RP archives"
+          git pull --rebase
+          git push
