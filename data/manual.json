@@ -454,6 +454,17 @@
    "order": 22,
    "title": "santa told me",
    "url": "/t32-santa-told-me-octavia"
+  },
+  "rmvebg8tolk": {
+   "archived": true,
+   "archived_at": "2026-10-18T21:07:02.700Z",
+   "chars": {
+    "chatondelalune": "c5",
+    "fcksleeping": "c25"
+   },
+   "order": 23,
+   "title": "rayon de soleil",
+   "url": "/t33-rayon-de-soleil-octavia"
   }
  }
 }
