@@ -244,6 +244,9 @@
   "rmvc9rufis8": "2164"
  },
  "ships": {
+  "c2|c22": {
+   "name": "Helonia"
+  },
   "c5|c25": {
    "name": "abellia"
   }
