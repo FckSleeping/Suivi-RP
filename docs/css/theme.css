@@ -335,3 +335,21 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .tile-static { cursor: default; }
 .tile-static:hover { transform: none; background: var(--glass); }
 .tile-static:active { transform: none; }
+
+/* ==========================================================================
+   AJOUTS (archives, ships, recaps) - blocs nouveaux, rien d'existant n'est modifie
+   ========================================================================== */
+.empty-box { padding: 1.5rem; text-align: center; }
+.error-detail { white-space: pre-wrap; font-size: 0.8rem; color: var(--muted); overflow-x: auto; }
+
+/* Une carte par ship : nom (renommable), personnages, nombre de RP */
+.ship-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; margin-bottom: var(--space-small); }
+.ship-name { margin: 0; font-size: 1.35rem; }
+.ship-count { margin-left: auto; }
+.archive-item .item-title { align-items: baseline; }
+.nsfw-mark { color: #e0527a; font-family: system-ui; }
+
+/* Recapitulatif d'un RP archive (depliable) */
+.recap { margin-top: 0.5rem; padding: 0.5rem 0.9rem; border-radius: var(--radius-small); background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--specular); }
+.recap summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.recap-text { margin: 0.6rem 0; line-height: 1.55; }

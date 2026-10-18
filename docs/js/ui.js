@@ -35,6 +35,8 @@
     home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
     list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
     users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14a6.5 6.5 0 0 1 3.5 6"/>',
+    archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+    undo: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
     settings: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   };
   function icon(name) {
@@ -75,12 +77,12 @@
   }
   const turnPill = (key) => (key ? h("span", { class: `pill pill-turn player-${key}` }, RP.playerLabel(key)) : h("span", { class: "pill pill-empty" }, "-"));
   const titleLink = (x) => (x.url ? h("a", { class: "topic-link", href: x.url, target: "_blank", rel: "noopener noreferrer" }, x.title) : h("span", {}, x.title));
-  // Une seule etiquette, la survoler donne toutes les raisons
-  const flagBadges = (x) => (x.flags.length ? badge("À vérifier", "flag", x.flags.map(RP.flagLabel).join("\n")) : null);
 
   function lastLine(x) {
-    if (!x.last && !x.lastAuthor) return "Pas encore lu";
-    return `Dernière réponse de ${x.lastAuthor ? x.lastAuthor.name : "auteur inconnu"} · ${RP.fmtAgo(x.last) || RP.fmtDate(x.last)}`;
+    if (!x.last && !x.lastAuthor && !x.lastPlayer) return "Pas encore lu";
+    const who = x.lastAuthor ? x.lastAuthor.name : x.lastPlayer ? RP.playerLabel(x.lastPlayer) : "";
+    const when = x.last ? RP.fmtAgo(x.last) || RP.fmtDate(x.last) : "";
+    return ["Dernière réponse" + (who ? ` de ${who}` : ""), when].filter(Boolean).join(" · ");
   }
 
   // ------------------------------------------------------------------ TABLEAU DE BORD = pastilles + liste des RP
@@ -114,13 +116,14 @@
               h("thead", {}, h("tr", {}, th("#", "order"), th("Titre", "title"), RP.players.map((p) => th(`Personnage ${p.label}`, p.key)), h("th", {}, "Lien"), th("État", "turn"), h("th", {}, "NSFW"), h("th", {}, ""))),
               h("tbody", {}, items.map((x, i) => h("tr", { class: x.isNew ? "row-new" : "" },
                 h("td", { class: "cell-num" }, i + 1),
-                h("td", { class: "cell-title" }, h("strong", {}, x.title), x.isNew ? badge("Nouvelle réponse", "new") : null, flagBadges(x),
-                  x.note ? h("div", { class: "note" }, x.note) : null, h("div", { class: "sub" }, x.last ? lastLine(x) : "")),
+                h("td", { class: "cell-title" }, h("strong", {}, x.title), x.isNew ? badge("Nouvelle réponse", "new") : null,
+                  x.note ? h("div", { class: "note" }, x.note) : null, h("div", { class: "sub" }, x.last || x.lastAuthor || x.lastPlayer ? lastLine(x) : "")),
                 RP.players.map((p) => h("td", {}, pill(x.chars[p.key]))),
                 h("td", { class: "cell-link" }, x.url ? h("a", { class: "icon-link", href: x.url, target: "_blank", rel: "noopener noreferrer", title: "Ouvrir le sujet", "aria-label": "Ouvrir le sujet" }, icon("link")) : ""),
                 h("td", {}, turnPill(x.turn)),
                 h("td", { class: "cell-nsfw" }, x.nsfw ? "♥" : ""),
                 h("td", { class: "cell-actions" },
+                  iconBtn("archive", "Archiver", () => archiveDialog(x.id), "btn-small"),
                   iconBtn("pencil", "Modifier", () => topicDialog(x.id), "btn-small"),
                   iconBtn("trash", "Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")))))
             )
@@ -135,7 +138,7 @@
       const rows = RP.rows();
       const tile = (n, label) => h("div", { class: "tile tile-static" }, h("span", { class: "tile-n" }, n), h("span", { class: "tile-l" }, label));
 
-      const welcome = !RP.rows().length && !RP.characters().length
+      const welcome = !RP.allRows().length && !RP.characters().length
         ? section("Pour commencer",
             h("p", {}, "Ajoutez d’abord vos personnages (Paramètres › Personnages), puis les RP à suivre."),
             h("div", { class: "dialog-actions" }, btn("Ajouter des personnages", () => goto("characters"), "", "users"), btn("Ajouter un RP", () => topicDialog(), "btn-primary", "plus")))
@@ -160,6 +163,99 @@
     return [wrap];
   }
 
+  // Archiver : fenetre qui propose de remplacer le RP par le nouveau
+  function archiveDialog(id) {
+    const x = RP.enrich(id);
+    const url = h("input", { class: "field-input", type: "text", placeholder: "https://…/t177-nouveau-sujet" });
+    const title = h("input", { class: "field-input", type: "text", placeholder: "Facultatif : repris du lien sinon" });
+    const err = h("p", { class: "error", hidden: true });
+    const fail = (m) => { err.textContent = m; err.hidden = false; };
+    openDialog("Archiver ce RP", h("div", { class: "form" },
+      h("p", {}, h("strong", {}, x.title)),
+      h("p", { class: "hint" }, `Il rejoindra les archives de la ship « ${RP.shipName(RP.shipKey(x))} », avec un récapitulatif rédigé chaque jour (s’il a un lien).`),
+      h("p", {}, "Un nouveau RP prend-il sa place ?"),
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "Lien du nouveau sujet"), url),
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "Titre du nouveau RP"), title),
+      h("p", { class: "hint" }, "Le nouveau RP garde les mêmes personnages et la même place dans la liste."),
+      err,
+      h("div", { class: "dialog-actions" },
+        btn("Annuler", closeDialog),
+        btn("Archiver seulement", () => { const m = RP.archive(id, null); if (m) fail(m); else closeDialog(); }),
+        btn("Archiver et remplacer", () => {
+          if (!url.value.trim() && !title.value.trim()) return fail("Indiquez le lien ou le titre du nouveau RP.");
+          const m = RP.archive(id, { url: url.value, title: title.value });
+          if (m) fail(m); else closeDialog();
+        }, "btn-primary"))));
+  }
+
+  // ------------------------------------------------------------------ ARCHIVES (par ship)
+  const dayOf = (iso) => RP.fmtDate(iso).replace(/,.*$/, "");
+
+  function recapBlock(x) {
+    const redoing = x.e.recap_redo && x.recap && new Date(x.e.recap_redo) > new Date(x.recap.generated);
+    if (x.recap) {
+      return h("details", { class: "recap" },
+        h("summary", {}, "Récapitulatif"),
+        x.recap.text.split(/\n{2,}/).map((par) => h("p", { class: "recap-text" }, par)),
+        h("p", { class: "hint" }, `Rédigé le ${RP.fmtUtc(x.recap.generated)}. `,
+          redoing ? "Un nouveau récapitulatif est prévu à la prochaine passe quotidienne." : null),
+        redoing ? null : btn("Refaire le récapitulatif", () => RP.redoRecap(x.id), "btn-small", "refresh"));
+    }
+    if (!x.tid) return h("p", { class: "hint" }, "Pas de lien : pas de récapitulatif possible.");
+    if (x.recapFailed) {
+      return h("p", { class: "hint" }, badge("Récap en erreur", "flag"), ` ${x.recapFailed.what} — nouvel essai à la prochaine passe quotidienne.`);
+    }
+    return h("p", { class: "hint" }, "Récapitulatif prévu à la prochaine passe quotidienne.");
+  }
+
+  function archiveItem(x) {
+    const meta = [];
+    if (x.recap && x.recap.created) meta.push(`du ${dayOf(x.recap.created)}${x.recap.last ? ` au ${dayOf(x.recap.last)}` : ""}`);
+    if (x.recap && x.recap.posts) meta.push(`${x.recap.posts} messages`);
+    if (x.archivedAt) meta.push(`archivé le ${new Date(x.archivedAt).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short", year: "numeric" })}`);
+    return h("li", { class: "item archive-item" },
+      h("div", { class: "item-main" },
+        h("div", { class: "item-title" }, titleLink(x), x.nsfw ? h("span", { class: "nsfw-mark", title: "NSFW" }, "♥") : null),
+        h("div", { class: "item-meta" }, meta.join(" · ")),
+        x.note ? h("div", { class: "note" }, x.note) : null,
+        recapBlock(x)),
+      h("div", { class: "item-actions" },
+        iconBtn("undo", "Remettre dans le tableau de bord", () => RP.restore(x.id), "btn-small"),
+        iconBtn("pencil", "Modifier", () => topicDialog(x.id), "btn-small"),
+        iconBtn("trash", "Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")));
+  }
+
+  function shipDialog(g) {
+    const name = h("input", { class: "field-input", type: "text", value: g.name, placeholder: g.defaultName });
+    openDialog("Nom de la ship", h("div", { class: "form" },
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "Nom"), name),
+      h("p", { class: "hint" }, `Nom d’origine : ${g.defaultName}`),
+      h("div", { class: "dialog-actions" },
+        btn("Annuler", closeDialog),
+        btn("Nom d’origine", () => { closeDialog(); RP.setShipName(g.key, ""); }),
+        btn("Enregistrer", () => { closeDialog(); RP.setShipName(g.key, name.value); }, "btn-primary"))));
+  }
+
+  function archives() {
+    const ships = RP.ships();
+    const out = [h("h2", { class: "page-title" }, "Archives"),
+      h("div", { class: "filters" }, btn("Ajouter un RP terminé", () => topicDialog(null, { archived: true }), "btn-primary", "plus"))];
+    if (!ships.length) {
+      out.push(section("Aucun RP archivé", empty("Archivez un RP depuis le tableau de bord (icône d’archive), ou ajoutez ici un RP déjà terminé : ils seront classés par ship.")));
+    }
+    ships.forEach((g) => {
+      const first = g.items[0];
+      out.push(h("section", { class: "card ship-card" },
+        h("div", { class: "ship-head" },
+          h("h2", { class: "card-title ship-name" }, g.name),
+          iconBtn("pencil", "Renommer la ship", () => shipDialog(g), "btn-small"),
+          h("span", { class: "chars" }, RP.players.map((p) => (first.chars[p.key] ? pill(first.chars[p.key]) : null))),
+          h("span", { class: "sub ship-count" }, `${g.items.length} RP`)),
+        h("ul", { class: "list" }, g.items.map(archiveItem))));
+    });
+    return out;
+  }
+
   function confirmDelete(id) {
     const x = RP.enrich(id);
     openDialog("Supprimer ce RP ?", h("div", {},
@@ -171,7 +267,7 @@
   }
 
   // Formulaire d'ajout (id absent) ou de modification
-  function topicDialog(id) {
+  function topicDialog(id, opts = {}) {
     const x = id ? RP.enrich(id) : null;
     const e = x ? x.e : {};
     const url = h("input", { class: "field-input", type: "text", value: e.url || "", placeholder: "https://…/t176-titre-du-sujet  (laissez vide si le RP n’a pas commencé)" });
@@ -189,8 +285,7 @@
     const err = h("p", { class: "error", hidden: true });
     const noChars = !RP.characters().length;
 
-    openDialog(id ? "Modifier ce RP" : "Ajouter un RP", h("div", { class: "form" },
-      x && x.flags.length ? h("ul", { class: "flag-list" }, x.flags.map((f) => h("li", {}, RP.flagLabel(f)))) : null,
+    openDialog(id ? "Modifier ce RP" : opts.archived ? "Ajouter un RP terminé" : "Ajouter un RP", h("div", { class: "form" },
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Lien du sujet"), url),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Titre"), title),
       charFields,
@@ -203,7 +298,7 @@
         btn("Annuler", closeDialog),
         btn(id ? "Enregistrer" : "Ajouter", () => {
           const msg = RP.saveTopic(id, {
-            url: url.value, title: title.value, nsfw: nsfw.checked, note: note.value,
+            url: url.value, title: title.value, nsfw: nsfw.checked, note: note.value, archived: !id && opts.archived ? true : undefined,
             chars: Object.fromEntries(RP.players.map((p) => [p.key, selects[p.key].value])),
           });
           if (msg) { err.textContent = msg; err.hidden = false; } else closeDialog();
@@ -316,7 +411,7 @@
     const names = h("textarea", { class: "field-input", rows: 3, placeholder: "Un ou plusieurs noms, séparés par des virgules ou des retours à la ligne" });
     const player = h("select", { class: "field-input" }, RP.players.map((p) => h("option", { value: p.key }, p.label)));
     const used = {};
-    RP.rows().forEach((x) => RP.players.forEach((p) => { const c = x.chars[p.key]; if (c) used[c.id] = (used[c.id] || 0) + 1; }));
+    RP.allRows().forEach((x) => RP.players.forEach((p) => { const c = x.chars[p.key]; if (c) used[c.id] = (used[c.id] || 0) + 1; }));
 
     const add = section("Ajouter des personnages",
       h("div", { class: "form" }, h("label", { class: "field" }, h("span", { class: "field-label" }, "Noms"), names),
@@ -459,7 +554,7 @@
     return out;
   }
 
-  RP.views = { dashboard, settings: settingsView };
+  RP.views = { dashboard, archives, settings: settingsView };
   RP.h = h; RP.btn = btn;
   RP.sourceForm = sourceForm;
 })();

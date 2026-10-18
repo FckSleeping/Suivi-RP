@@ -3,7 +3,7 @@
   const C = window.RP_CONFIG;
   const RP = (window.RP = window.RP || {});
   const SETTINGS_KEY = "rp-settings"; // depot + jeton : uniquement dans CE navigateur
-  const state = (RP.state = { forum: null, manual: null, base: null, status: null, source: "", dirty: 0, error: "", saveStatus: "", saveError: "" });
+  const state = (RP.state = { forum: null, manual: null, base: null, status: null, recaps: { recaps: {}, failed: {} }, source: "", dirty: 0, error: "", saveStatus: "", saveError: "" });
   const listeners = [];
   RP.onChange = (fn) => listeners.push(fn);
   const emit = () => listeners.forEach((f) => f());
@@ -20,7 +20,7 @@
 
   const norm = (s) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   RP.norm = norm;
-  const emptyManual = () => ({ schema: 2, characters: {}, topics: {}, seen: {} });
+  const emptyManual = () => ({ schema: 2, characters: {}, topics: {}, ships: {}, seen: {} });
 
   function sortKeys(v) {
     if (Array.isArray(v)) return v.map(sortKeys);
@@ -65,9 +65,9 @@
       if (!r.ok) throw new Error(`${n}.json : HTTP ${r.status}`);
       return r.json();
     };
-    const [forum, manual, status] = await Promise.all([get("forum").catch(() => null), get("manual").catch(() => null), get("status").catch(() => null)]);
+    const [forum, manual, status, recaps] = await Promise.all([get("forum").catch(() => null), get("manual").catch(() => null), get("status").catch(() => null), get("recaps").catch(() => null)]);
     if (!forum && !manual) throw new Error("Cette page n’est pas reliée à vos données. Remplissez le dépôt et le jeton ci-dessous (ou ouvrez le lien d’installation).");
-    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, source: "Fichiers locaux" };
+    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, recaps, source: "Fichiers locaux" };
   }
 
   async function fetchGitHub(s) {
@@ -80,20 +80,20 @@
       if (!r.ok) throw new Error(`GitHub a répondu HTTP ${r.status} pour ${n}.json.`);
       return r.json();
     };
-    const [forum, manual, status] = await Promise.all([get("forum", true), get("manual", true), get("status", true)]);
-    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, source: `GitHub (${s.repo})` };
+    const [forum, manual, status, recaps] = await Promise.all([get("forum", true), get("manual", true), get("status", true), get("recaps", true)]);
+    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, recaps, source: `GitHub (${s.repo})` };
   }
 
   function readFiles(files) {
     const out = {};
     return Promise.all([...files].map((f) => f.text().then((t) => { out[f.name.replace(/\.json$/i, "")] = JSON.parse(t); })))
-      .then(() => ({ forum: out.forum || { topics: {} }, manual: out.manual || emptyManual(), status: out.status || null, source: "Fichiers ouverts à la main" }));
+      .then(() => ({ forum: out.forum || { topics: {} }, manual: out.manual || emptyManual(), status: out.status || null, recaps: out.recaps || null, source: "Fichiers ouverts à la main" }));
   }
 
   function apply(d) {
     const m = Object.assign(emptyManual(), d.manual);
     ["forum_rules", "forum_names", "replacements"].forEach((k) => delete m[k]); // anciens reglages abandonnes
-    ["characters", "topics", "seen"].forEach((k) => (m[k] = m[k] && typeof m[k] === "object" ? m[k] : {}));
+    ["characters", "topics", "ships", "seen"].forEach((k) => (m[k] = m[k] && typeof m[k] === "object" ? m[k] : {}));
     m.schema = 2;
     // Tolerance aux modifications faites a la main dans manual.json
     const playerKey = (v) => { const s = norm(v); const p = C.players.find((x) => norm(x.key) === s || norm(x.label) === s); return p ? p.key : v; };
@@ -111,6 +111,7 @@
       else Object.keys(e.chars).forEach((p) => { const k = playerKey(p); if (k !== p) { e.chars[k] = e.chars[p]; delete e.chars[p]; } });
     });
     d.forum.topics = d.forum.topics || {};
+    state.recaps = { recaps: (d.recaps && d.recaps.recaps) || {}, failed: (d.recaps && d.recaps.failed) || {} };
     Object.assign(state, { forum: d.forum, manual: m, base: JSON.parse(JSON.stringify(m)), status: d.status, source: d.source, dirty: 0, error: "", saveStatus: "", saveError: "" });
     emit();
   }
@@ -190,8 +191,10 @@
     const author = lp && lp.author;
     const authorPlayer = author ? RP.playerOfGroup(author.group) : null;
 
-    // A qui le tour : toujours deduit de l'auteur du dernier message (« - » tant qu'il est inconnu)
-    const turn = authorPlayer ? RP.otherPlayer(authorPlayer) : null;
+    // A qui le tour : l'autre joueuse que celle qui a ecrit en dernier. La synchro donne « last_player »
+    // (auteur lu, sinon deduit par alternance : dans un RP a deux, la reponse suivante est forcement de l'autre).
+    const lastPlayer = (t && t.last_player) || authorPlayer;
+    const turn = lastPlayer ? RP.otherPlayer(lastPlayer) : null;
 
     // Personnage de chaque joueuse : celui que vous avez choisi, sinon deviné d'après les comptes vus dans le sujet
     const charFor = (player) => {
@@ -213,14 +216,22 @@
       turn,
       last: lp ? lp.date : null,
       lastAuthor: author,
+      lastPlayer,
       count: (t && t.post_count) || 0,
       flags: (t && t.flags) || [],
       isNew: !!(t && t.new_reply), // pose par la synchro, retire par la synchro suivante
       note: e.note || "",
+      archived: !!e.archived,
+      archivedAt: e.archived_at || null,
+      recap: (tid && state.recaps.recaps[tid]) || null,
+      recapFailed: (tid && state.recaps.failed[tid]) || null,
     };
   };
 
-  RP.rows = () => Object.keys(state.manual.topics).map(RP.enrich).sort((a, b) => a.order - b.order);
+  RP.allRows = () => Object.keys(state.manual.topics).map(RP.enrich).sort((a, b) => a.order - b.order);
+  RP.rows = () => RP.allRows().filter((x) => !x.archived);                    // RP en cours (tableau de bord)
+  RP.archivedRows = () => RP.allRows().filter((x) => x.archived)             // RP archives (onglet Archives)
+    .sort((a, b) => String(b.archivedAt || "").localeCompare(String(a.archivedAt || "")));
   RP.byRecent = (a, b) => (ms(b.last) || 0) - (ms(a.last) || 0);
 
   // ------------------------------------------------------------------ modifications (vos corrections)
@@ -230,26 +241,73 @@
   const clean = (o) => { Object.keys(o).forEach((k) => { const v = o[k]; if (v === undefined || v === null || v === "" || v === false || (Array.isArray(v) && !v.length) || (v && typeof v === "object" && !Array.isArray(v) && !Object.keys(v).length)) delete o[k]; }); return o; };
 
   // Ajout / modification d'un RP. Renvoie un message d'erreur, ou "".
+  // Verifie un lien de sujet. Renvoie { error } ou { url } (url nettoyee, "" si aucun lien).
+  function checkUrl(raw, selfId) {
+    let url = (raw || "").trim();
+    if (!url) return { url: "" };
+    if (!tidOf(url)) return { error: "Ce lien ne ressemble pas à un sujet du forum : il doit contenir /t suivi du numéro (ex. …/t176-mon-sujet)." };
+    url = RP.cleanPath(url);
+    const dup = Object.entries(state.manual.topics).find(([k, e]) => k !== selfId && tidOf(e.url) === tidOf(url));
+    if (dup) return { error: "Ce sujet est déjà dans la liste." };
+    return { url };
+  }
+  const maxOrder = () => Math.max(0, ...Object.values(state.manual.topics).map((e) => e.order || 0));
+
+  // Ajout / modification d'un RP (f.archived : true pour un RP termine ajoute a la main). Renvoie un message d'erreur, ou "".
   RP.saveTopic = (id, f) => {
-    let url = (f.url || "").trim();
-    if (url) {
-      if (!tidOf(url)) return "Ce lien ne ressemble pas à un sujet du forum : il doit contenir /t suivi du numéro (ex. …/t176-mon-sujet).";
-      url = RP.cleanPath(url);
-      const dup = Object.entries(state.manual.topics).find(([k, e]) => k !== id && tidOf(e.url) === tidOf(url));
-      if (dup) return "Ce sujet est déjà dans la liste.";
-    }
-    const isNew = !id;
-    if (isNew) id = nextId("r", state.manual.topics);
+    const chk = checkUrl(f.url, id);
+    if (chk.error) return chk.error;
+    if (!id) id = nextId("r", state.manual.topics);
     const prev = state.manual.topics[id] || {};
-    const maxOrder = Math.max(0, ...Object.values(state.manual.topics).map((e) => e.order || 0));
+    const archived = f.archived !== undefined ? !!f.archived : !!prev.archived;
     state.manual.topics[id] = clean({
-      order: prev.order || maxOrder + 1,
-      url, title: (f.title || "").trim(), chars: clean({ ...f.chars }), nsfw: !!f.nsfw,
+      order: prev.order || maxOrder() + 1,
+      url: chk.url, title: (f.title || "").trim(), chars: clean({ ...f.chars }), nsfw: !!f.nsfw,
       note: (f.note || "").trim(),
+      archived, archived_at: archived ? prev.archived_at || new Date().toISOString() : "",
+      recap_redo: prev.recap_redo,
     });
     touch();
     return "";
   };
+
+  // Archive un RP ; `replacement` ({ url, title }) cree en meme temps le RP qui le remplace (memes personnages, meme place).
+  RP.archive = (id, replacement) => {
+    const old = state.manual.topics[id];
+    if (!old) return "";
+    let fresh = null;
+    if (replacement && (replacement.url || replacement.title)) {
+      const chk = checkUrl(replacement.url, id);
+      if (chk.error) return chk.error;
+      if (chk.url && tidOf(chk.url) === tidOf(old.url)) return "Le nouveau lien est celui du RP archivé.";
+      fresh = clean({ order: old.order, url: chk.url, title: (replacement.title || "").trim(), chars: clean({ ...(old.chars || {}) }), nsfw: !!old.nsfw });
+    }
+    old.archived = true;
+    old.archived_at = new Date().toISOString();
+    if (fresh) state.manual.topics[nextId("r", state.manual.topics)] = fresh;
+    touch();
+    return "";
+  };
+  RP.restore = (id) => { const e = state.manual.topics[id]; if (e) { delete e.archived; delete e.archived_at; touch(); } };
+  RP.redoRecap = (id) => { const e = state.manual.topics[id]; if (e) { e.recap_redo = new Date().toISOString(); touch(); } };
+
+  // ------------------------------------------------------------------ ships (couple de personnages)
+  // Cle d'une ship : « id personnage Fanny | id personnage Ambre » ; nom par defaut « Nom & Nom », renommable.
+  RP.shipKey = (x) => RP.players.map((p) => (x.chars[p.key] ? x.chars[p.key].id : "")).join("|");
+  RP.shipDefaultName = (key) => key.split("|").map((id) => (id && state.manual.characters[id] ? state.manual.characters[id].name : "")).filter(Boolean).join(" & ") || "Sans ship";
+  RP.shipName = (key) => (state.manual.ships[key] && state.manual.ships[key].name) || RP.shipDefaultName(key);
+  RP.setShipName = (key, name) => {
+    name = (name || "").trim();
+    if (!name || name === RP.shipDefaultName(key)) delete state.manual.ships[key]; else state.manual.ships[key] = { name };
+    touch();
+  };
+  RP.ships = () => {
+    const groups = {};
+    RP.archivedRows().forEach((x) => { const k = RP.shipKey(x); (groups[k] = groups[k] || { key: k, items: [] }).items.push(x); });
+    return Object.values(groups).map((g) => ({ ...g, name: RP.shipName(g.key), defaultName: RP.shipDefaultName(g.key) }))
+      .sort((a, b) => norm(a.name).localeCompare(norm(b.name)));
+  };
+
   RP.deleteTopic = (id) => { delete state.manual.topics[id]; touch(); };
 
   RP.addCharacters = (names, player) => {
@@ -291,7 +349,7 @@
   function merge3(base, local, remote) {
     const out = JSON.parse(JSON.stringify(remote));
     out.schema = 2;
-    ["characters", "topics", "seen"].forEach((col) => {
+    ["characters", "topics", "ships", "seen"].forEach((col) => {
       const b = base[col] || {}, l = local[col] || {}, r = (out[col] = out[col] || {});
       new Set([...Object.keys(b), ...Object.keys(l)]).forEach((k) => {
         if (JSON.stringify(l[k]) !== JSON.stringify(b[k])) { if (l[k] === undefined) delete r[k]; else r[k] = l[k]; }

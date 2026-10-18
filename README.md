@@ -13,26 +13,33 @@ est le tour.
 ## Contenu
 - `docs/` : la page web. `index.html`, `js/` (logique), `css/structure.css` (mise en page) et
   `css/theme.css` (VOTRE fichier d'apparence).
-- `scripts/sync.py` : la synchronisation. `scripts/proto_forum.py` : briques de lecture du forum
+- `scripts/sync.py` : la synchronisation des RP en cours (toutes les 30 min). `scripts/recap.py` : le recapitulatif des RP
+  archives (une fois par jour). `scripts/proto_forum.py` : briques de lecture du forum
   (et son mode `--discover`, qui sert a explorer le forum a la main).
 - `scripts/check_connexion.py` : test de connexion depuis GitHub Actions.
 - `data/manual.json` : VOTRE liste (personnages, RP, notes). Jamais ecrit par la synchro.
-- `data/forum.json`, `data/status.json` : ecrits par la synchro uniquement.
-- `.github/workflows/` : `test-connexion.yml` et `synchro.yml` (lancement a la demande).
+- `data/forum.json`, `data/status.json` : ecrits par la synchro uniquement. `data/recaps.json` : ecrit par `recap.py` uniquement.
+- `.github/workflows/` : `test-connexion.yml`, `synchro.yml` (declenchee par cron-job.org) et `recap.yml` (une fois par jour).
 
 ## Identifiants
 Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont dans les Secrets du depot
 (Settings > Secrets and variables > Actions) : `FORUM_USER` et `FORUM_PASSWORD`.
 
 ## Utiliser la page
-Deux onglets seulement.
+Trois onglets : Tableau de bord, Archives, Parametres.
 - **Tableau de bord** : deux compteurs en haut (« Au tour de Fanny », « Au tour d'Ambre »), puis la liste des RP :
   « Ajouter un RP » = coller le lien du sujet, choisir le personnage de chacune, cocher NSFW si besoin. Le titre est repris
-  du lien (modifiable). Un RP sans lien (pas encore commence) est possible. Colonne « Etat » = a qui le tour, deduit de
-  l'auteur du dernier message (modifiable a la main). L'etiquette « Nouvelle reponse » est posee par la synchro quand le
+  du lien (modifiable). Un RP sans lien (pas encore commence) est possible. Colonne « Etat » = a qui le tour, toujours deduit de
+  l'auteur du dernier message (« - » tant qu'il est inconnu) ; il n'y a rien a regler. L'etiquette « Nouvelle reponse » est posee par la synchro quand le
   dernier message a change, et disparait toute seule a la synchro suivante : rien a valider. L'icone corbeille retire le RP
   de la liste (rien n'est touche sur le forum) ; quand un RP est fini, on modifie simplement le lien/titre pour en suivre
   un autre a la place.
+- **Archiver un RP** (icone d'archive sur sa ligne) : une fenetre propose de le remplacer par le nouveau (lien et titre
+  facultatifs ; le nouveau garde les memes personnages et la meme place dans la liste) ou de l'archiver seulement.
+- **Archives** : les RP termines, classes par ship (couple « personnage de Fanny + personnage d'Ambre »). Le nom d'une ship
+  se change avec le crayon (par defaut « Nom & Nom », a vous d'inventer le Brangelina). « Ajouter un RP termine » ajoute
+  directement un RP fini, sans passer par le tableau de bord ; la fleche courbe remet un RP dans le tableau de bord.
+  Chaque RP archive qui a un lien recoit un **recapitulatif** (deplier « Recapitulatif »).
 - **Parametres** : en premier la section **Personnages** (ajout de plusieurs noms d'un coup, joueuse, couleur de fond et de texte,
   suppression), puis le dernier controle du forum, la connexion a GitHub, le lien d'installation et la copie de `manual.json`.
   Les anciennes adresses `#/rp` et `#/characters` redirigent vers ces deux pages.
@@ -65,6 +72,30 @@ automatiquement : meme teinte que le fond, en plus clair ou plus fonce (reglage 
 Le bouton « Figer les couleurs de texte » (page Personnages) ecrit dans `manual.json` la couleur calculee de chaque
 personnage qui n'a pas de `text_color`, pour pouvoir la retoucher a la main ; « Texte en automatique » les efface toutes.
 
+## A qui le tour (colonne « Etat »)
+Toujours automatique, sans rien a regler : c'est l'autre joueuse que celle qui a ecrit en dernier. La synchro lit
+l'auteur du dernier message ; s'il est illisible, elle deduit par alternance (un RP se joue a deux : chaque nouveau
+message est forcement de l'autre joueuse, et a defaut d'etat precedent le premier message est celui du createur).
+Il n'y a donc plus d'etiquette « a verifier ». Les erreurs de lecture d'un sujet (lien incorrect, sujet inaccessible)
+apparaissent dans Parametres > « Dernier controle du forum ».
+
+Pour le depannage, quand le dernier message d'un sujet n'a ni auteur ni date lisibles, sa fiche dans `data/forum.json`
+contient une cle `diag` (nombre d'elements candidats, de messages retenus, balise et classes du dernier ; aucun texte du forum).
+
+## Recapitulatifs des RP archives
+`recap.py` lit TOUTES les pages d'un RP archive, puis demande a Claude (API Anthropic) un resume de chaque bloc de texte et un
+recapitulatif d'ensemble (150 a 250 mots). Il tourne **une fois par jour** (`recap.yml`, vers 6 h) et s'arrete tout de suite
+s'il n'y a rien a faire : quelques minutes d'Actions par mois seulement. Un recap n'est refait que si le lien du RP change, ou si
+vous cliquez sur « Refaire le recapitulatif ». Au plus 5 RP par passage (`--max`), le reste le lendemain.
+A mettre en place une fois :
+1. Creer une cle sur console.anthropic.com (avec un peu de credit) et l'ajouter dans les Secrets du depot sous le nom
+   `ANTHROPIC_API_KEY`.
+2. Facultatif : Settings > Secrets and variables > Actions > onglet Variables, `RECAP_MODEL` pour changer de modele
+   (`claude-haiku-5-5` par defaut : le moins cher ; `claude-sonnet-5-5` redige mieux).
+3. Pour le lancer tout de suite : onglet Actions > « Recap des RP archives » > Run workflow.
+Confidentialite : le texte des RP est envoye a l'API d'Anthropic pour etre resume. Le journal ne montre que des numeros.
+Cout : tres faible avec le modele par defaut (de l'ordre de quelques centimes pour un RP de plusieurs centaines de messages).
+
 ## Lancer la synchro
 Onglet Actions > « Synchronisation du forum » > Run workflow.
 En local : `python scripts/sync.py` (avec `FORUM_USER` / `FORUM_PASSWORD` dans l'environnement).
@@ -92,5 +123,6 @@ Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit
 ## Format de manual.json
 - `characters` : `{id: {name, player, color, text_color}}` (`player` = compte forum de la joueuse ; `color` facultative :
   sans elle, la couleur est relevee sur le forum, voir ci-dessous)
-- `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw,
-  turn (compte, ou "none"), note}}`
+- `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, note, archived, archived_at, recap_redo}}`
+  (`archived` : RP archive ; `recap_redo` : date de la demande de nouveau recap)
+- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name}}` : noms personnalises des ships

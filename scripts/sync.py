@@ -2,7 +2,7 @@
 """
 Synchronisation du suivi des RP de Sweeter Weather (LECTURE SEULE sur le forum).
 
-Le script ne lit QUE les RP de votre liste (data/manual.json, champ « topics »).
+Le script ne lit QUE les RP en cours de votre liste (data/manual.json, champ « topics », hors RP archives).
 Pour chacun, il relit la derniere page du sujet : dernier message, auteur, date,
 nombre de messages, et les comptes qui ont ecrit. Un sujet dont le dernier message a change depuis
 le passage precedent recoit « new_reply » ; l'etiquette disparait au passage suivant. Il ecrit data/forum.json et
@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 SCHEMA = 2
 PLAYERS = p.PLAYERS  # groupe -> compte joueuse ("3": chatondelalune, "4": fcksleeping)
-KEEP = ("diag", "first_seen", "path", "created", "last_post", "post_count", "last_page_path",
+KEEP = ("diag", "last_player", "first_seen", "path", "created", "last_post", "post_count", "last_page_path",
         "authors", "last_read", "last_changed", "previous_last_post_id")
 
 
@@ -184,8 +184,8 @@ def _post_info(pid, el):
     return {"post_id": pid, "author": author, "date_raw": raw, "date": iso}
 
 
-def parse_posts_clean(soup):
-    """Messages d'une page, sans les faux messages.
+def clean_post_pairs(soup):
+    """Messages d'une page (element, infos), sans les faux messages.
     Le prototype prend pour un message tout element dont l'id ressemble a « p123 » : un habillage de RP
     ou un element parasite portant un tel id devenait un faux « dernier message » (sans auteur ni date).
     Ici : on garde les elements les plus exterieurs, puis ceux qui ont un auteur ou une date.
@@ -208,7 +208,13 @@ def parse_posts_clean(soup):
             "avec_auteur": sum(1 for _, x in kept if x["author"]), "avec_date": sum(1 for _, x in kept if x["date"])}
     if last_el is not None:
         diag["dernier"] = {"balise": last_el.name, "classes": last_el.get("class") or []}
-    return [x for _, x in kept], diag
+    return kept, diag
+
+
+def parse_posts_clean(soup):
+    """Comme clean_post_pairs, mais ne renvoie que les infos (auteur, date...) de chaque message."""
+    pairs, diag = clean_post_pairs(soup)
+    return [x for _, x in pairs], diag
 
 
 def read_topic(forum, tid, t):
@@ -253,16 +259,47 @@ def read_topic(forum, tid, t):
         raise RuntimeError("aucun_message_lisible")
     if first and not t.get("created"):
         t["created"] = slim_post(first[0])
+    prev_player, prev_count = t.get("last_player"), t.get("post_count")
     t["last_post"] = slim_post(posts[-1])
+    t["post_count"] = cur + len(posts)
+    t["last_player"] = deduce_last_player(t, t["last_post"], t["post_count"], prev_player, prev_count)
+    if t["last_player"] is None:
+        t.pop("last_player")
     if not posts[-1]["author"] or not posts[-1]["date"]:
         t["diag"] = diag  # aide au depannage : ce qui a ete vu sur la page (aucun texte du forum)
     else:
         t.pop("diag", None)
-    t["post_count"] = cur + len(posts)
     t["last_page_path"] = path
     for uid, cnt in counts.items():
         authors[uid]["color"] = cnt.most_common(1)[0][0]
     t["authors"] = sorted(authors.values(), key=lambda a: a["uid"])
+
+
+def other_player(player):
+    others = [v for v in PLAYERS.values() if v != player]
+    return others[0] if player in PLAYERS.values() and others else None
+
+
+def player_of(post):
+    """Compte joueuse (chatondelalune / fcksleeping) d'un message, d'apres le groupe de son auteur."""
+    a = (post or {}).get("author")
+    return PLAYERS.get(a["group"]) if a and a.get("group") else None
+
+
+def deduce_last_player(t, last_post, count, prev_player, prev_count):
+    """Qui a ecrit le dernier message ? Dans un RP a deux, les messages alternent :
+    1. l'auteur du dernier message, s'il est lisible ;
+    2. sinon, le dernier etat connu : chaque nouveau message change de joueuse ;
+    3. sinon, la parite : le message n°1 est du createur, le n°2 de l'autre, etc."""
+    lp = player_of(last_post)
+    if lp:
+        return lp
+    if prev_player and prev_count is not None and count is not None:
+        return prev_player if (count - prev_count) % 2 == 0 else other_player(prev_player)
+    creator = player_of(t.get("created"))
+    if creator and count:
+        return creator if count % 2 == 1 else other_player(creator)
+    return None
 
 
 def is_newer(after, before):
@@ -303,8 +340,8 @@ def run(args, forum, log=print):
     paths = {}
     for entry in (manual.get("topics") or {}).values():
         tid = topic_id(entry.get("url"))
-        if not tid:
-            continue  # RP prevu mais pas encore commence (pas de lien)
+        if not tid or entry.get("archived"):
+            continue  # RP prevu mais pas encore commence (pas de lien), ou archive (voir recap.py)
         paths[tid] = clean_path(entry["url"])
 
     # On repart des donnees deja connues (pour ne relire que le necessaire)
@@ -322,13 +359,16 @@ def run(args, forum, log=print):
     for i, tid in enumerate(targets, 1):
         t = topics[tid]
         before = (t.get("last_post") or {}).get("post_id")
+        before_count = t.get("post_count")
         try:
             read_topic(forum, tid, t)
             t["last_read"] = now_utc()
             t.pop("last_error", None)
             status["topics_read"] += 1
             after = t["last_post"]["post_id"]
-            if before and is_newer(after, before) and t["last_post"].get("author"):
+            count = t.get("post_count")
+            grew = count > before_count if before_count is not None and count is not None else is_newer(after, before)
+            if before and grew:
                 t["previous_last_post_id"] = before
                 t["last_changed"] = now_utc()
                 t["new_reply"] = True  # non conserve d'un passage a l'autre : l'etiquette disparait a la synchro suivante
