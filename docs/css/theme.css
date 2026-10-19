@@ -367,7 +367,7 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .picker-pop.picker-inline { position: static; width: auto; max-width: 20rem; animation: none; box-shadow: var(--glass-shadow); }
  
 /* Apercu recadrable de la banniere (fenetre « Personnaliser la ship ») : glisser pour recadrer, curseur pour le zoom */
-.banner-crop { position: relative; overflow: hidden; aspect-ratio: 7 / 1; min-height: 12rem; border-radius: var(--radius-small); border: 1px solid var(--glass-border); background: var(--glass); cursor: grab; touch-action: none; user-select: none; width: stretch;}
+.banner-crop { position: relative; overflow: hidden; aspect-ratio: 7 / 1; min-height: 10rem; border-radius: var(--radius-small); border: 1px solid var(--glass-border); background: var(--glass); cursor: grab; touch-action: none; user-select: none; width: stretch;}
 .banner-crop.dragging { cursor: grabbing; }
 .banner-crop img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; }
 .crop-controls { margin: 0.6rem 0 0.2rem; }
