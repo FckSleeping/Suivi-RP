@@ -1,7 +1,7 @@
 {
- "archived_read": 1,
+ "archived_read": 0,
  "errors": [],
- "last_run": "2026-10-19T02:01:09Z",
+ "last_run": "2026-10-19T02:13:31Z",
  "ok": true,
  "schema": 2,
  "topics_read": 20,
