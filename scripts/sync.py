@@ -2,7 +2,8 @@
 """
 Synchronisation du suivi des RP de Sweeter Weather (LECTURE SEULE sur le forum).
 
-Le script ne lit QUE les RP en cours de votre liste (data/manual.json, champ « topics », hors RP archives).
+Le script ne lit que les RP de votre liste (data/manual.json, champ « topics ») : les RP en cours a chaque passage, les
+RP archives une seule fois (pour connaitre leurs dates, qui servent a classer les archives).
 Pour chacun, il relit la derniere page du sujet : dernier message, auteur, date,
 nombre de messages, et les comptes qui ont ecrit. Un sujet dont le dernier message a change depuis
 le passage precedent recoit « new_reply » ; l'etiquette disparait au passage suivant. Il ecrit data/forum.json et
@@ -33,7 +34,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 SCHEMA = 2
 PLAYERS = p.PLAYERS  # groupe -> compte joueuse ("3": chatondelalune, "4": fcksleeping)
-KEEP = ("diag", "last_player", "first_seen", "path", "created", "last_post", "post_count", "last_page_path",
+KEEP = ("last_error", "diag", "last_player", "first_seen", "path", "created", "last_post", "post_count", "last_page_path",
         "authors", "last_read", "last_changed", "previous_last_post_id")
 
 
@@ -329,7 +330,7 @@ def run(args, forum, log=print):
     manual = load_json(DATA_DIR / "manual.json", {})
     old = load_json(DATA_DIR / "forum.json", {})
     status = {"schema": SCHEMA, "last_run": now_utc(), "ok": True, "errors": [],
-              "topics_total": 0, "topics_read": 0, "topics_with_new_reply": 0}
+              "topics_total": 0, "topics_read": 0, "archived_read": 0, "topics_with_new_reply": 0}
 
     def error(where, what):
         status["errors"].append({"where": where, "what": what})
@@ -337,12 +338,14 @@ def run(args, forum, log=print):
         log(f"  ! {where} : {what}")
 
     # Les RP de la liste : numero de sujet -> chemin
-    paths = {}
+    paths, archived = {}, set()
     for entry in (manual.get("topics") or {}).values():
         tid = topic_id(entry.get("url"))
-        if not tid or entry.get("archived"):
-            continue  # RP prevu mais pas encore commence (pas de lien), ou archive (voir recap.py)
+        if not tid:
+            continue  # RP prevu mais pas encore commence (pas de lien)
         paths[tid] = clean_path(entry["url"])
+        if entry.get("archived"):
+            archived.add(tid)
 
     # On repart des donnees deja connues (pour ne relire que le necessaire)
     topics = {}
@@ -354,7 +357,22 @@ def run(args, forum, log=print):
         prev["path"] = path
         topics[tid] = prev
 
-    targets = [t for t in topics if not args.only or t in args.only]
+    def due(tid):
+        """RP en cours : toujours relus. RP archive : lu UNE seule fois (dates de debut et de fin, pour le classement
+        des archives), puis jamais ; apres une erreur, nouvel essai au plus une fois par jour."""
+        if tid not in archived:
+            return True
+        t = topics[tid]
+        if t.get("last_post"):
+            return False
+        at = (t.get("last_error") or {}).get("at")
+        try:
+            return not at or (datetime.now(timezone.utc) - datetime.strptime(at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)).total_seconds() > 86400
+        except ValueError:
+            return True
+
+    targets = [t for t in topics if (not args.only or t in args.only) and (args.only or due(t))]
+    active_targets = [t for t in targets if t not in archived]
     log(f"\n=== Lecture de {len(targets)} RP sur {len(topics)} dans la liste ===")
     for i, tid in enumerate(targets, 1):
         t = topics[tid]
@@ -364,7 +382,7 @@ def run(args, forum, log=print):
             read_topic(forum, tid, t)
             t["last_read"] = now_utc()
             t.pop("last_error", None)
-            status["topics_read"] += 1
+            status["topics_read" if tid not in archived else "archived_read"] += 1
             after = t["last_post"]["post_id"]
             count = t.get("post_count")
             grew = count > before_count if before_count is not None and count is not None else is_newer(after, before)
@@ -384,7 +402,7 @@ def run(args, forum, log=print):
         t["flags"] = compute_flags(t)
     status["topics_total"] = len(topics)
     log(f"\n=== Bilan : {status['topics_read']} lu(s), {status['topics_with_new_reply']} avec nouvelle reponse ===")
-    if targets and status["topics_read"] == 0:
+    if active_targets and status["topics_read"] == 0:
         status["ok"] = False
         status["errors"].append({"where": "global", "what": "aucun_sujet_lisible"})
     return {"schema": SCHEMA, "topics": topics}, status

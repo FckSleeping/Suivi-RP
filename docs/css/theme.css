@@ -349,7 +349,17 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .archive-item .item-title { align-items: baseline; }
 .nsfw-mark { color: #e0527a; font-family: system-ui; }
 
-/* Recapitulatif d'un RP archive (depliable) */
-.recap { margin-top: 0.5rem; padding: 0.5rem 0.9rem; border-radius: var(--radius-small); background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--specular); }
-.recap summary { cursor: pointer; font-weight: 600; color: var(--accent); }
-.recap-text { margin: 0.6rem 0; line-height: 1.55; }
+/* Blocs d'archives personnalisables : couleur, banniere, deux images carrees (gifs) */
+.ship-card { position: relative; overflow: hidden; }
+.ship-colored { border-left: 5px solid var(--ship); background: linear-gradient(135deg, var(--ship-tint), transparent 55%), var(--glass); }
+.ship-colored .ship-name { color: var(--ship); }
+.ship-banner { display: block; width: calc(100% + 2.8rem); margin: -1rem -1.4rem 1rem; height: 8rem; object-fit: cover; }
+.ship-gif { width: 3.6rem; height: 3.6rem; flex: none; object-fit: cover; border-radius: 18px; border: 2px solid rgba(255, 255, 255, 0.85); box-shadow: 0 4px 12px rgba(40, 30, 90, 0.2); }
+.ship-tools { margin-left: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 0.7rem; }
+.side-mark { display: inline-flex; align-items: center; color: var(--accent); }
+.side-mark .icon { width: 1.05rem; height: 1.05rem; }
+
+/* Selecteur de couleur affiche dans une fenetre (rien ne passe devant) */
+.picker-host { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; }
+.picker-host .picker-pop { flex-basis: 100%; }
+.picker-pop.picker-inline { position: static; width: auto; max-width: 20rem; animation: none; box-shadow: var(--glass-shadow); }

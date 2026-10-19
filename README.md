@@ -13,13 +13,12 @@ est le tour.
 ## Contenu
 - `docs/` : la page web. `index.html`, `js/` (logique), `css/structure.css` (mise en page) et
   `css/theme.css` (VOTRE fichier d'apparence).
-- `scripts/sync.py` : la synchronisation des RP en cours (toutes les 30 min). `scripts/recap.py` : le recapitulatif des RP
-  archives (une fois par jour). `scripts/proto_forum.py` : briques de lecture du forum
+- `scripts/sync.py` : la synchronisation (toutes les 30 min). `scripts/proto_forum.py` : briques de lecture du forum
   (et son mode `--discover`, qui sert a explorer le forum a la main).
 - `scripts/check_connexion.py` : test de connexion depuis GitHub Actions.
 - `data/manual.json` : VOTRE liste (personnages, RP, notes). Jamais ecrit par la synchro.
-- `data/forum.json`, `data/status.json` : ecrits par la synchro uniquement. `data/recaps.json` : ecrit par `recap.py` uniquement.
-- `.github/workflows/` : `test-connexion.yml`, `synchro.yml` (declenchee par cron-job.org) et `recap.yml` (une fois par jour).
+- `data/forum.json`, `data/status.json` : ecrits par la synchro uniquement.
+- `.github/workflows/` : `test-connexion.yml`, `synchro.yml` (declenchee par cron-job.org).
 
 ## Identifiants
 Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont dans les Secrets du depot
@@ -36,10 +35,17 @@ Trois onglets : Tableau de bord, Archives, Parametres.
   un autre a la place.
 - **Archiver un RP** (icone d'archive sur sa ligne) : une fenetre propose de le remplacer par le nouveau (lien et titre
   facultatifs ; le nouveau garde les memes personnages et la meme place dans la liste) ou de l'archiver seulement.
-- **Archives** : les RP termines, classes par ship (couple « personnage de Fanny + personnage d'Ambre »). Le nom d'une ship
-  se change avec le crayon (par defaut « Nom & Nom », a vous d'inventer le Brangelina). « Ajouter un RP termine » ajoute
-  directement un RP fini, sans passer par le tableau de bord ; la fleche courbe remet un RP dans le tableau de bord.
-  Chaque RP archive qui a un lien recoit un **recapitulatif** (deplier « Recapitulatif »).
+- **Archives** : les RP termines, classes par ship (couple « personnage de Fanny + personnage d'Ambre »). Dans chaque bloc,
+  du plus ancien au plus recent d'apres la date du dernier message (celle du forum, lue une seule fois par la synchro ;
+  ou la « date de fin » saisie a la main, qui l'emporte ; ou la date d'archivage en dernier recours).
+  Le crayon du bloc le **personnalise** : nom (par defaut « Nom & Nom », a vous d'inventer le Brangelina), couleur,
+  banniere et deux images carrees (gifs) — des adresses `https://` d'images deja hebergees ailleurs. Le bouton
+  « Ajouter un RP » d'un bloc cree directement un RP termine avec les deux personnages de la ship deja choisis.
+  « Ajouter un RP termine » (en haut) ajoute un RP fini sans passer par le tableau de bord ; la fleche courbe remet un RP
+  dans le tableau de bord.
+- **RP « hors ship »** : case a cocher quand on archive ou modifie un RP archive. Un RP entre deux personnages qui ne forment
+  pas une ship (ex. Leo x Maeve, alors que Leo est avec Felicy et Maeve avec Wade) apparait dans le bloc de CHACUN de ses
+  deux personnages, avec une petite icone de branche ; un personnage sans ship a un bloc a son nom.
 - **Parametres** : en premier la section **Personnages** (ajout de plusieurs noms d'un coup, joueuse, couleur de fond et de texte,
   suppression), puis le dernier controle du forum, la connexion a GitHub, le lien d'installation et la copie de `manual.json`.
   Les anciennes adresses `#/rp` et `#/characters` redirigent vers ces deux pages.
@@ -82,20 +88,6 @@ apparaissent dans Parametres > « Dernier controle du forum ».
 Pour le depannage, quand le dernier message d'un sujet n'a ni auteur ni date lisibles, sa fiche dans `data/forum.json`
 contient une cle `diag` (nombre d'elements candidats, de messages retenus, balise et classes du dernier ; aucun texte du forum).
 
-## Recapitulatifs des RP archives
-`recap.py` lit TOUTES les pages d'un RP archive, puis demande a Claude (API Anthropic) un resume de chaque bloc de texte et un
-recapitulatif d'ensemble (150 a 250 mots). Il tourne **une fois par jour** (`recap.yml`, vers 6 h) et s'arrete tout de suite
-s'il n'y a rien a faire : quelques minutes d'Actions par mois seulement. Un recap n'est refait que si le lien du RP change, ou si
-vous cliquez sur « Refaire le recapitulatif ». Au plus 5 RP par passage (`--max`), le reste le lendemain.
-A mettre en place une fois :
-1. Creer une cle sur console.anthropic.com (avec un peu de credit) et l'ajouter dans les Secrets du depot sous le nom
-   `ANTHROPIC_API_KEY`.
-2. Facultatif : Settings > Secrets and variables > Actions > onglet Variables, `RECAP_MODEL` pour changer de modele
-   (`claude-haiku-5-5` par defaut : le moins cher ; `claude-sonnet-5-5` redige mieux).
-3. Pour le lancer tout de suite : onglet Actions > « Recap des RP archives » > Run workflow.
-Confidentialite : le texte des RP est envoye a l'API d'Anthropic pour etre resume. Le journal ne montre que des numeros.
-Cout : tres faible avec le modele par defaut (de l'ordre de quelques centimes pour un RP de plusieurs centaines de messages).
-
 ## Lancer la synchro
 Onglet Actions > « Synchronisation du forum » > Run workflow.
 En local : `python scripts/sync.py` (avec `FORUM_USER` / `FORUM_PASSWORD` dans l'environnement).
@@ -123,6 +115,6 @@ Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit
 ## Format de manual.json
 - `characters` : `{id: {name, player, color, text_color}}` (`player` = compte forum de la joueuse ; `color` facultative :
   sans elle, la couleur est relevee sur le forum, voir ci-dessous)
-- `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, note, archived, archived_at, recap_redo}}`
-  (`archived` : RP archive ; `recap_redo` : date de la demande de nouveau recap)
-- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name}}` : noms personnalises des ships
+- `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, note, archived, archived_at, side, ended}}`
+  (`archived` : RP archive ; `side` : RP « hors ship » ; `ended` : date de fin AAAA-MM-JJ saisie a la main)
+- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name, color, banner, gif1, gif2}}` : personnalisation des blocs d'archives

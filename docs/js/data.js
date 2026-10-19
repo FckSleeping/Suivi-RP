@@ -3,7 +3,7 @@
   const C = window.RP_CONFIG;
   const RP = (window.RP = window.RP || {});
   const SETTINGS_KEY = "rp-settings"; // depot + jeton : uniquement dans CE navigateur
-  const state = (RP.state = { forum: null, manual: null, base: null, status: null, recaps: { recaps: {}, failed: {} }, source: "", dirty: 0, error: "", saveStatus: "", saveError: "" });
+  const state = (RP.state = { forum: null, manual: null, base: null, status: null, source: "", dirty: 0, error: "", saveStatus: "", saveError: "" });
   const listeners = [];
   RP.onChange = (fn) => listeners.push(fn);
   const emit = () => listeners.forEach((f) => f());
@@ -65,9 +65,9 @@
       if (!r.ok) throw new Error(`${n}.json : HTTP ${r.status}`);
       return r.json();
     };
-    const [forum, manual, status, recaps] = await Promise.all([get("forum").catch(() => null), get("manual").catch(() => null), get("status").catch(() => null), get("recaps").catch(() => null)]);
+    const [forum, manual, status] = await Promise.all([get("forum").catch(() => null), get("manual").catch(() => null), get("status").catch(() => null)]);
     if (!forum && !manual) throw new Error("Cette page n’est pas reliée à vos données. Remplissez le dépôt et le jeton ci-dessous (ou ouvrez le lien d’installation).");
-    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, recaps, source: "Fichiers locaux" };
+    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, source: "Fichiers locaux" };
   }
 
   async function fetchGitHub(s) {
@@ -80,14 +80,14 @@
       if (!r.ok) throw new Error(`GitHub a répondu HTTP ${r.status} pour ${n}.json.`);
       return r.json();
     };
-    const [forum, manual, status, recaps] = await Promise.all([get("forum", true), get("manual", true), get("status", true), get("recaps", true)]);
-    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, recaps, source: `GitHub (${s.repo})` };
+    const [forum, manual, status] = await Promise.all([get("forum", true), get("manual", true), get("status", true)]);
+    return { forum: forum || { topics: {} }, manual: manual || emptyManual(), status, source: `GitHub (${s.repo})` };
   }
 
   function readFiles(files) {
     const out = {};
     return Promise.all([...files].map((f) => f.text().then((t) => { out[f.name.replace(/\.json$/i, "")] = JSON.parse(t); })))
-      .then(() => ({ forum: out.forum || { topics: {} }, manual: out.manual || emptyManual(), status: out.status || null, recaps: out.recaps || null, source: "Fichiers ouverts à la main" }));
+      .then(() => ({ forum: out.forum || { topics: {} }, manual: out.manual || emptyManual(), status: out.status || null, source: "Fichiers ouverts à la main" }));
   }
 
   function apply(d) {
@@ -107,11 +107,11 @@
       const e = m.topics[id];
       if (!e || typeof e !== "object" || Array.isArray(e)) { delete m.topics[id]; return; }
       delete e.turn; // ancien choix manuel de l'etat : abandonne, l'etat est toujours automatique
+      delete e.recap_redo; // les recaps automatiques n'existent plus
       if (!e.chars || typeof e.chars !== "object" || Array.isArray(e.chars)) delete e.chars;
       else Object.keys(e.chars).forEach((p) => { const k = playerKey(p); if (k !== p) { e.chars[k] = e.chars[p]; delete e.chars[p]; } });
     });
     d.forum.topics = d.forum.topics || {};
-    state.recaps = { recaps: (d.recaps && d.recaps.recaps) || {}, failed: (d.recaps && d.recaps.failed) || {} };
     Object.assign(state, { forum: d.forum, manual: m, base: JSON.parse(JSON.stringify(m)), status: d.status, source: d.source, dirty: 0, error: "", saveStatus: "", saveError: "" });
     emit();
   }
@@ -223,15 +223,16 @@
       note: e.note || "",
       archived: !!e.archived,
       archivedAt: e.archived_at || null,
-      recap: (tid && state.recaps.recaps[tid]) || null,
-      recapFailed: (tid && state.recaps.failed[tid]) || null,
+      side: !!e.side,                                 // RP « hors ship » : fait partie de l'histoire de chacun des deux personnages
+      ended: e.ended || null,                         // date de fin saisie a la main (AAAA-MM-JJ)
+      endDate: e.ended ? `${e.ended}T12:00` : lp ? lp.date : e.archived_at || null, // sert a classer les archives
     };
   };
 
   RP.allRows = () => Object.keys(state.manual.topics).map(RP.enrich).sort((a, b) => a.order - b.order);
   RP.rows = () => RP.allRows().filter((x) => !x.archived);                    // RP en cours (tableau de bord)
-  RP.archivedRows = () => RP.allRows().filter((x) => x.archived)             // RP archives (onglet Archives)
-    .sort((a, b) => String(b.archivedAt || "").localeCompare(String(a.archivedAt || "")));
+  RP.archivedRows = () => RP.allRows().filter((x) => x.archived)             // RP archives, du plus ancien au plus recent
+    .sort((a, b) => (ms(a.endDate) || 0) - (ms(b.endDate) || 0));
   RP.byRecent = (a, b) => (ms(b.last) || 0) - (ms(a.last) || 0);
 
   // ------------------------------------------------------------------ modifications (vos corrections)
@@ -265,14 +266,15 @@
       url: chk.url, title: (f.title || "").trim(), chars: clean({ ...f.chars }), nsfw: !!f.nsfw,
       note: (f.note || "").trim(),
       archived, archived_at: archived ? prev.archived_at || new Date().toISOString() : "",
-      recap_redo: prev.recap_redo,
+      side: f.side !== undefined ? !!f.side : !!prev.side,
+      ended: f.ended !== undefined ? f.ended || "" : prev.ended,
     });
     touch();
     return "";
   };
 
   // Archive un RP ; `replacement` ({ url, title }) cree en meme temps le RP qui le remplace (memes personnages, meme place).
-  RP.archive = (id, replacement) => {
+  RP.archive = (id, replacement, opts = {}) => {
     const old = state.manual.topics[id];
     if (!old) return "";
     let fresh = null;
@@ -280,32 +282,58 @@
       const chk = checkUrl(replacement.url, id);
       if (chk.error) return chk.error;
       if (chk.url && tidOf(chk.url) === tidOf(old.url)) return "Le nouveau lien est celui du RP archivé.";
-      fresh = clean({ order: old.order, url: chk.url, title: (replacement.title || "").trim(), chars: clean({ ...(old.chars || {}) }), nsfw: !!old.nsfw });
+      fresh = clean({ order: old.order, url: chk.url, title: (replacement.title || "").trim(), chars: clean({ ...(old.chars || {}) }), nsfw: !!old.nsfw, side: opts.side !== undefined ? !!opts.side : !!old.side });
     }
     old.archived = true;
     old.archived_at = new Date().toISOString();
+    if (opts.side !== undefined) { if (opts.side) old.side = true; else delete old.side; }
     if (fresh) state.manual.topics[nextId("r", state.manual.topics)] = fresh;
     touch();
     return "";
   };
   RP.restore = (id) => { const e = state.manual.topics[id]; if (e) { delete e.archived; delete e.archived_at; touch(); } };
-  RP.redoRecap = (id) => { const e = state.manual.topics[id]; if (e) { e.recap_redo = new Date().toISOString(); touch(); } };
 
   // ------------------------------------------------------------------ ships (couple de personnages)
-  // Cle d'une ship : « id personnage Fanny | id personnage Ambre » ; nom par defaut « Nom & Nom », renommable.
+  // Cle d'une ship : « id personnage Fanny | id personnage Ambre ». Nom par defaut « Nom & Nom », renommable.
   RP.shipKey = (x) => RP.players.map((p) => (x.chars[p.key] ? x.chars[p.key].id : "")).join("|");
+  // Les personnages d'une ship, au format { compte_joueuse: id } (pour pre-remplir un formulaire)
+  RP.shipChars = (key) => Object.fromEntries(key.split("|").map((id, i) => [RP.players[i].key, id]).filter(([, id]) => id));
   RP.shipDefaultName = (key) => key.split("|").map((id) => (id && state.manual.characters[id] ? state.manual.characters[id].name : "")).filter(Boolean).join(" & ") || "Sans ship";
-  RP.shipName = (key) => (state.manual.ships[key] && state.manual.ships[key].name) || RP.shipDefaultName(key);
-  RP.setShipName = (key, name) => {
-    name = (name || "").trim();
-    if (!name || name === RP.shipDefaultName(key)) delete state.manual.ships[key]; else state.manual.ships[key] = { name };
+  RP.shipCustom = (key) => state.manual.ships[key] || {};
+  RP.shipName = (key) => RP.shipCustom(key).name || RP.shipDefaultName(key);
+  // Personnalise une ship : { name, color, banner, gif1, gif2 } (une valeur vide efface le champ)
+  RP.setShip = (key, patch) => {
+    const cur = { ...RP.shipCustom(key), ...patch };
+    Object.keys(cur).forEach((k) => { if (!cur[k]) delete cur[k]; });
+    if (cur.name === RP.shipDefaultName(key)) delete cur.name;
+    if (Object.keys(cur).length) state.manual.ships[key] = cur; else delete state.manual.ships[key];
     touch();
   };
+
+  // Blocs d'archives : un par ship. Un RP « hors ship » (side) apparait dans le bloc de CHACUN de ses deux personnages
+  // (leur ship, ou un bloc a leur nom s'ils n'en ont pas). Dans chaque bloc, du plus ancien au plus recent.
   RP.ships = () => {
+    const rows = RP.archivedRows();
+    const shipKeys = new Set(rows.filter((x) => !x.side).map(RP.shipKey));
     const groups = {};
-    RP.archivedRows().forEach((x) => { const k = RP.shipKey(x); (groups[k] = groups[k] || { key: k, items: [] }).items.push(x); });
-    return Object.values(groups).map((g) => ({ ...g, name: RP.shipName(g.key), defaultName: RP.shipDefaultName(g.key) }))
-      .sort((a, b) => norm(a.name).localeCompare(norm(b.name)));
+    const add = (key, x, direct) => {
+      const g = (groups[key] = groups[key] || { key, items: [] });
+      if (!g.items.some((i) => i.x.id === x.id)) g.items.push({ x, direct });
+    };
+    rows.filter((x) => !x.side).forEach((x) => add(RP.shipKey(x), x, true));
+    rows.filter((x) => x.side).forEach((x) => {
+      RP.players.forEach((p, i) => {
+        const id = x.chars[p.key] ? x.chars[p.key].id : "";
+        if (!id) return;
+        const homes = [...shipKeys].filter((k) => k.split("|")[i] === id);
+        if (homes.length) homes.forEach((k) => add(k, x, false));
+        else add(RP.players.map((_, j) => (j === i ? id : "")).join("|"), x, false);
+      });
+    });
+    return Object.values(groups).map((g) => ({
+      ...g, items: g.items.sort((a, b) => (ms(a.x.endDate) || 0) - (ms(b.x.endDate) || 0)),
+      name: RP.shipName(g.key), defaultName: RP.shipDefaultName(g.key), custom: RP.shipCustom(g.key),
+    })).sort((a, b) => norm(a.name).localeCompare(norm(b.name)));
   };
 
   RP.deleteTopic = (id) => { delete state.manual.topics[id]; touch(); };

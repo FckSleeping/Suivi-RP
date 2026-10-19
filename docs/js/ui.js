@@ -36,6 +36,7 @@
     list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
     users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14a6.5 6.5 0 0 1 3.5 6"/>',
     archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+    branch: '<circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.2v9.6"/><path d="M18 10.2c0 4-5 3.5-10.5 7"/>',
     undo: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
     settings: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   };
@@ -168,91 +169,116 @@
     const x = RP.enrich(id);
     const url = h("input", { class: "field-input", type: "text", placeholder: "https://…/t177-nouveau-sujet" });
     const title = h("input", { class: "field-input", type: "text", placeholder: "Facultatif : repris du lien sinon" });
+    const side = h("input", { type: "checkbox", checked: x.side });
     const err = h("p", { class: "error", hidden: true });
     const fail = (m) => { err.textContent = m; err.hidden = false; };
     openDialog("Archiver ce RP", h("div", { class: "form" },
       h("p", {}, h("strong", {}, x.title)),
-      h("p", { class: "hint" }, `Il rejoindra les archives de la ship « ${RP.shipName(RP.shipKey(x))} », avec un récapitulatif rédigé chaque jour (s’il a un lien).`),
+      h("p", { class: "hint" }, `Il rejoindra les archives de la ship « ${RP.shipName(RP.shipKey(x))} », classées par date du dernier message.`),
       h("p", {}, "Un nouveau RP prend-il sa place ?"),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Lien du nouveau sujet"), url),
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Titre du nouveau RP"), title),
       h("p", { class: "hint" }, "Le nouveau RP garde les mêmes personnages et la même place dans la liste."),
+      h("label", { class: "field field-check" }, side, h("span", {}, "Pas un RP de ship : il fait partie de l’histoire de chacun des deux personnages")),
       err,
       h("div", { class: "dialog-actions" },
         btn("Annuler", closeDialog),
-        btn("Archiver seulement", () => { const m = RP.archive(id, null); if (m) fail(m); else closeDialog(); }),
+        btn("Archiver seulement", () => { const m = RP.archive(id, null, { side: side.checked }); if (m) fail(m); else closeDialog(); }),
         btn("Archiver et remplacer", () => {
           if (!url.value.trim() && !title.value.trim()) return fail("Indiquez le lien ou le titre du nouveau RP.");
-          const m = RP.archive(id, { url: url.value, title: title.value });
+          const m = RP.archive(id, { url: url.value, title: title.value }, { side: side.checked });
           if (m) fail(m); else closeDialog();
         }, "btn-primary"))));
   }
 
-  // ------------------------------------------------------------------ ARCHIVES (par ship)
+  // ------------------------------------------------------------------ ARCHIVES (par ship, du plus ancien au plus recent)
   const dayOf = (iso) => RP.fmtDate(iso).replace(/,.*$/, "");
+  const isHex = (v) => /^#[0-9a-f]{6}$/i.test(v || "");
+  const isUrl = (v) => /^https?:\/\/\S+$/i.test(v || "");
+  const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 
-  function recapBlock(x) {
-    const redoing = x.e.recap_redo && x.recap && new Date(x.e.recap_redo) > new Date(x.recap.generated);
-    if (x.recap) {
-      return h("details", { class: "recap" },
-        h("summary", {}, "Récapitulatif"),
-        x.recap.text.split(/\n{2,}/).map((par) => h("p", { class: "recap-text" }, par)),
-        h("p", { class: "hint" }, `Rédigé le ${RP.fmtUtc(x.recap.generated)}. `,
-          redoing ? "Un nouveau récapitulatif est prévu à la prochaine passe quotidienne." : null),
-        redoing ? null : btn("Refaire le récapitulatif", () => RP.redoRecap(x.id), "btn-small", "refresh"));
-    }
-    if (!x.tid) return h("p", { class: "hint" }, "Pas de lien : pas de récapitulatif possible.");
-    if (x.recapFailed) {
-      return h("p", { class: "hint" }, badge("Récap en erreur", "flag"), ` ${x.recapFailed.what} — nouvel essai à la prochaine passe quotidienne.`);
-    }
-    return h("p", { class: "hint" }, "Récapitulatif prévu à la prochaine passe quotidienne.");
-  }
-
-  function archiveItem(x) {
+  function archiveItem({ x, direct }) {
     const meta = [];
-    if (x.recap && x.recap.created) meta.push(`du ${dayOf(x.recap.created)}${x.recap.last ? ` au ${dayOf(x.recap.last)}` : ""}`);
-    if (x.recap && x.recap.posts) meta.push(`${x.recap.posts} messages`);
-    if (x.archivedAt) meta.push(`archivé le ${new Date(x.archivedAt).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short", year: "numeric" })}`);
+    if (!direct) meta.push(RP.players.map((p) => (x.chars[p.key] || {}).name).filter(Boolean).join(" × "));
+    if (x.ended) meta.push(`terminé le ${dayOf(x.endDate)}`);
+    else if (x.created && x.last) meta.push(`du ${dayOf(x.created)} au ${dayOf(x.last)}`);
+    else if (x.last) meta.push(`dernier message le ${dayOf(x.last)}`);
+    else if (x.archivedAt) meta.push(`archivé le ${new Date(x.archivedAt).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short", year: "numeric" })}`);
+    if (x.count) meta.push(`${x.count} messages`);
     return h("li", { class: "item archive-item" },
       h("div", { class: "item-main" },
-        h("div", { class: "item-title" }, titleLink(x), x.nsfw ? h("span", { class: "nsfw-mark", title: "NSFW" }, "♥") : null),
+        h("div", { class: "item-title" }, titleLink(x),
+          direct ? null : h("span", { class: "side-mark", title: "Pas un RP du ship : il fait partie de l’histoire de ces personnages" }, icon("branch")),
+          x.nsfw ? h("span", { class: "nsfw-mark", title: "NSFW" }, "♥") : null),
         h("div", { class: "item-meta" }, meta.join(" · ")),
-        x.note ? h("div", { class: "note" }, x.note) : null,
-        recapBlock(x)),
+        x.note ? h("div", { class: "note" }, x.note) : null),
       h("div", { class: "item-actions" },
         iconBtn("undo", "Remettre dans le tableau de bord", () => RP.restore(x.id), "btn-small"),
         iconBtn("pencil", "Modifier", () => topicDialog(x.id), "btn-small"),
         iconBtn("trash", "Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")));
   }
 
+  // Nom, couleur, banniere et deux images carrees (gifs) d'une ship
   function shipDialog(g) {
+    const c = g.custom;
+    let color = isHex(c.color) ? c.color : "";
+    const NEUTRAL = "#9a96ad";
     const name = h("input", { class: "field-input", type: "text", value: g.name, placeholder: g.defaultName });
-    openDialog("Nom de la ship", h("div", { class: "form" },
-      h("label", { class: "field" }, h("span", { class: "field-label" }, "Nom"), name),
+    const banner = h("input", { class: "field-input", type: "text", value: c.banner || "", placeholder: "https://…/banniere.png" });
+    const gif1 = h("input", { class: "field-input", type: "text", value: c.gif1 || "", placeholder: "https://…/image.gif" });
+    const gif2 = h("input", { class: "field-input", type: "text", value: c.gif2 || "", placeholder: "https://…/image.gif" });
+    const err = h("p", { class: "error", hidden: true });
+    const sw = colorPicker({ value: color || NEUTRAL, inline: true, onChange: (hx) => { color = hx; } });
+    const noColor = btn("Aucune couleur", () => { color = ""; closePicker(); sw.style.setProperty("--c", NEUTRAL); }, "btn-small");
+    const field = (label, input) => h("label", { class: "field" }, h("span", { class: "field-label" }, label), input);
+    openDialog("Personnaliser la ship", h("div", { class: "form" },
+      field("Nom", name),
       h("p", { class: "hint" }, `Nom d’origine : ${g.defaultName}`),
+      h("div", { class: "field" }, h("span", { class: "field-label" }, "Couleur du bloc"), h("div", { class: "picker-host" }, sw, noColor)),
+      field("Bannière (adresse de l’image)", banner),
+      field("Image carrée de gauche (gif ou image)", gif1),
+      field("Image carrée de droite (gif ou image)", gif2),
+      h("p", { class: "hint" }, "Les images doivent déjà être hébergées quelque part (adresse commençant par https://). Laissez vide pour ne rien afficher."),
+      err,
       h("div", { class: "dialog-actions" },
         btn("Annuler", closeDialog),
-        btn("Nom d’origine", () => { closeDialog(); RP.setShipName(g.key, ""); }),
-        btn("Enregistrer", () => { closeDialog(); RP.setShipName(g.key, name.value); }, "btn-primary"))));
+        btn("Tout réinitialiser", () => { closeDialog(); RP.setShip(g.key, { name: "", color: "", banner: "", gif1: "", gif2: "" }); }),
+        btn("Enregistrer", () => {
+          for (const [label, el] of [["La bannière", banner], ["L’image de gauche", gif1], ["L’image de droite", gif2]]) {
+            if (el.value.trim() && !isUrl(el.value.trim())) { err.textContent = `${label} : l’adresse doit commencer par https://`; err.hidden = false; return; }
+          }
+          closeDialog();
+          RP.setShip(g.key, { name: name.value.trim(), color, banner: banner.value.trim(), gif1: gif1.value.trim(), gif2: gif2.value.trim() });
+        }, "btn-primary"))));
+  }
+
+  function shipCard(g) {
+    const c = g.custom;
+    const img = (cls, src) => { const el = h("img", { class: cls, src, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }); el.addEventListener("error", () => el.remove()); return el; };
+    return h("section", { class: "card ship-card" + (isHex(c.color) ? " ship-colored" : ""), style: isHex(c.color) ? `--ship:${c.color};--ship-tint:${rgba(c.color, 0.16)}` : null },
+      isUrl(c.banner) ? img("ship-banner", c.banner) : null,
+      h("div", { class: "ship-head" },
+        isUrl(c.gif1) ? img("ship-gif", c.gif1) : null,
+        h("h2", { class: "card-title ship-name" }, g.name),
+        iconBtn("pencil", "Personnaliser la ship", () => shipDialog(g), "btn-small"),
+        isUrl(c.gif2) ? img("ship-gif", c.gif2) : null,
+        h("span", { class: "ship-tools" },
+          h("span", { class: "sub ship-count" }, `${g.items.length} RP`),
+          btn("Ajouter un RP", () => topicDialog(null, { archived: true, chars: RP.shipChars(g.key) }), "btn-small", "plus"))),
+      h("ul", { class: "list" }, g.items.map(archiveItem)));
   }
 
   function archives() {
     const ships = RP.ships();
     const out = [h("h2", { class: "page-title" }, "Archives"),
-      h("div", { class: "filters" }, btn("Ajouter un RP terminé", () => topicDialog(null, { archived: true }), "btn-primary", "plus"))];
+      h("div", { class: "filters" },
+        btn("Ajouter un RP terminé", () => topicDialog(null, { archived: true }), "btn-primary", "plus"),
+        h("span", { class: "sub" }, "Dans chaque bloc, du plus ancien au plus récent (date du dernier message).")),
+    ];
     if (!ships.length) {
       out.push(section("Aucun RP archivé", empty("Archivez un RP depuis le tableau de bord (icône d’archive), ou ajoutez ici un RP déjà terminé : ils seront classés par ship.")));
     }
-    ships.forEach((g) => {
-      const first = g.items[0];
-      out.push(h("section", { class: "card ship-card" },
-        h("div", { class: "ship-head" },
-          h("h2", { class: "card-title ship-name" }, g.name),
-          iconBtn("pencil", "Renommer la ship", () => shipDialog(g), "btn-small"),
-          h("span", { class: "chars" }, RP.players.map((p) => (first.chars[p.key] ? pill(first.chars[p.key]) : null))),
-          h("span", { class: "sub ship-count" }, `${g.items.length} RP`)),
-        h("ul", { class: "list" }, g.items.map(archiveItem))));
-    });
+    ships.forEach((g) => out.push(shipCard(g)));
     return out;
   }
 
@@ -270,17 +296,20 @@
   function topicDialog(id, opts = {}) {
     const x = id ? RP.enrich(id) : null;
     const e = x ? x.e : {};
+    const isArchive = !!(opts.archived || (x && x.archived));
     const url = h("input", { class: "field-input", type: "text", value: e.url || "", placeholder: "https://…/t176-titre-du-sujet  (laissez vide si le RP n’a pas commencé)" });
     const title = h("input", { class: "field-input", type: "text", value: e.title || "", placeholder: x ? x.title : "Facultatif : repris du lien sinon" });
     const selects = {};
     const charFields = RP.players.map((p) => {
       const list = RP.charsOf(p.key);
       const auto = x && x.chars[p.key] && x.chars[p.key].auto ? ` (reconnu : ${x.chars[p.key].name})` : "";
-      selects[p.key] = h("select", { class: "field-input", value: (e.chars || {})[p.key] || "" },
+      selects[p.key] = h("select", { class: "field-input", value: (e.chars || {})[p.key] || (opts.chars || {})[p.key] || "" },
         h("option", { value: "" }, `—${auto}`), list.map((c) => h("option", { value: c.id }, c.name)));
       return h("label", { class: "field" }, h("span", { class: "field-label" }, `Personnage de ${p.label}`), selects[p.key]);
     });
     const nsfw = h("input", { type: "checkbox", checked: !!e.nsfw });
+    const side = h("input", { type: "checkbox", checked: !!e.side });
+    const ended = h("input", { class: "field-input", type: "date", value: e.ended || "" });
     const note = h("textarea", { class: "field-input", rows: 2, placeholder: "Facultatif" }, e.note || "");
     const err = h("p", { class: "error", hidden: true });
     const noChars = !RP.characters().length;
@@ -291,6 +320,8 @@
       charFields,
       noChars ? h("div", {}, h("p", { class: "hint" }, "Aucun personnage dans la liste : ajoutez-les d’abord."), btn("Ouvrir Paramètres › Personnages", () => { closeDialog(); goto("characters"); }, "btn-small")) : null,
       h("label", { class: "field field-check" }, nsfw, h("span", {}, "NSFW ♥")),
+      isArchive ? h("label", { class: "field field-check" }, side, h("span", {}, "Pas un RP de ship : il fait partie de l’histoire de chacun des deux personnages (il apparaît dans leurs deux blocs d’archives)")) : null,
+      isArchive ? h("label", { class: "field" }, h("span", { class: "field-label" }, "Date de fin (facultatif, remplace la date du dernier message du forum pour le classement)"), ended) : null,
       h("label", { class: "field" }, h("span", { class: "field-label" }, "Note"), note),
       err,
       h("div", { class: "dialog-actions" },
@@ -299,6 +330,7 @@
         btn(id ? "Enregistrer" : "Ajouter", () => {
           const msg = RP.saveTopic(id, {
             url: url.value, title: title.value, nsfw: nsfw.checked, note: note.value, archived: !id && opts.archived ? true : undefined,
+            side: isArchive ? side.checked : undefined, ended: isArchive ? ended.value : undefined,
             chars: Object.fromEntries(RP.players.map((p) => [p.key, selects[p.key].value])),
           });
           if (msg) { err.textContent = msg; err.hidden = false; } else closeDialog();
@@ -384,11 +416,13 @@
         h("div", { class: "picker-sliders" }, sH, sS, sL),
         h("div", { class: "picker-foot" }, hex,
           opts.onReset ? btn(opts.resetLabel || "Automatique", () => { closePicker(); opts.onReset(); }, "btn-small", "refresh") : null));
-      document.body.append(pop);
+      if (opts.inline) swatch.parentNode.append(pop); else document.body.append(pop); // « inline » : dans une fenetre de dialogue (rien ne passe devant)
+      pop.classList.toggle("picker-inline", !!opts.inline);
       tracks();
 
       // La fenetre suit la pastille quand la page defile ou change de taille
       const place = () => {
+        if (opts.inline) return;
         const r = swatch.getBoundingClientRect(), w = pop.offsetWidth, ht = pop.offsetHeight;
         pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
         pop.style.top = `${r.bottom + 8 + ht > window.innerHeight ? Math.max(8, r.top - ht - 8) : r.bottom + 8}px`;
@@ -396,7 +430,7 @@
       place();
 
       const on = (e) => {
-        if (e.type === "keydown") { if (e.key === "Escape") closePicker(); return; }
+        if (e.type === "keydown") { if (e.key === "Escape") { if (opts.inline) e.preventDefault(); closePicker(); } return; }
         if (e.type === "scroll" || e.type === "resize") { if (!pop.contains(e.target)) place(); return; }
         if (!pop.contains(e.target) && !swatch.contains(e.target)) closePicker();
       };
