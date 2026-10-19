@@ -218,10 +218,20 @@
         iconBtn("trash", "Supprimer", () => confirmDelete(x.id), "btn-small btn-danger")));
   }
 
-  // Nom, couleur, banniere et deux images carrees (gifs) d'une ship
+  // Cadrage de la banniere : « x,y,zoom » (x et y en %, zoom de 1 a 3). L'image est centree sur le point (x, y) et agrandie autour de lui.
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const parseCrop = (s) => {
+    const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)$/.exec(s || "");
+    return m ? { x: clamp(+m[1], 0, 100), y: clamp(+m[2], 0, 100), z: clamp(+m[3], 1, 3) } : { x: 50, y: 50, z: 1 };
+  };
+  const cropStyle = (k) => `object-position:${k.x}% ${k.y}%;transform-origin:${k.x}% ${k.y}%;transform:scale(${k.z})`;
+  const cropString = (k) => (k.x === 50 && k.y === 50 && k.z === 1 ? "" : [k.x, k.y, k.z].map((n) => Math.round(n * 10) / 10).join(","));
+
+  // Nom, couleur, banniere (recadrable a la souris) et deux images carrees (gifs) d'une ship
   function shipDialog(g) {
     const c = g.custom;
     let color = isHex(c.color) ? c.color : "";
+    const crop = parseCrop(c.banner_crop);
     const NEUTRAL = "#9a96ad";
     const name = h("input", { class: "field-input", type: "text", value: g.name, placeholder: g.defaultName });
     const banner = h("input", { class: "field-input", type: "text", value: c.banner || "", placeholder: "https://…/banniere.png" });
@@ -231,37 +241,86 @@
     const sw = colorPicker({ value: color || NEUTRAL, inline: true, onChange: (hx) => { color = hx; } });
     const noColor = btn("Aucune couleur", () => { color = ""; closePicker(); sw.style.setProperty("--c", NEUTRAL); }, "btn-small");
     const field = (label, input) => h("label", { class: "field" }, h("span", { class: "field-label" }, label), input);
+
+    // Apercu recadrable : on fait glisser l'image, le curseur regle le zoom
+    const previewImg = h("img", { alt: "", draggable: "false", referrerpolicy: "no-referrer" });
+    const box = h("div", { class: "banner-crop", hidden: true }, previewImg);
+    const zoom = h("input", { type: "range", class: "picker-range crop-zoom", min: 100, max: 300, value: Math.round(crop.z * 100), "aria-label": "Zoom de la bannière" });
+    const cropMsg = h("p", { class: "hint", hidden: true }, "Glissez l’image pour la recadrer ; le curseur règle le zoom.");
+    const applyCrop = () => previewImg.setAttribute("style", cropStyle(crop));
+    let shown = "";
+    const syncPreview = () => {
+      const v = banner.value.trim();
+      const ok = isUrl(v);
+      box.hidden = zoom.hidden = cropMsg.hidden = !ok;
+      if (ok && v !== shown) { shown = v; previewImg.src = v; }
+      applyCrop();
+    };
+    previewImg.addEventListener("error", () => { box.hidden = zoom.hidden = true; cropMsg.textContent = "Image introuvable à cette adresse."; cropMsg.hidden = false; });
+    previewImg.addEventListener("load", () => { cropMsg.textContent = "Glissez l’image pour la recadrer ; le curseur règle le zoom."; });
+    banner.addEventListener("input", syncPreview);
+    zoom.addEventListener("input", () => { crop.z = +zoom.value / 100; applyCrop(); });
+    let drag = null;
+    box.addEventListener("pointerdown", (e) => {
+      if (!previewImg.naturalWidth) return;
+      box.setPointerCapture(e.pointerId);
+      drag = { sx: e.clientX, sy: e.clientY, x: crop.x, y: crop.y };
+      box.classList.add("dragging");
+    });
+    box.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const cw = box.clientWidth, ch = box.clientHeight, nw = previewImg.naturalWidth, nh = previewImg.naturalHeight;
+      const s = Math.max(cw / nw, ch / nh);                       // echelle « cover »
+      const kx = cw * (crop.z - 1) + crop.z * (nw * s - cw);      // deplacement de l'image a l'ecran pour 100 % de x
+      const ky = ch * (crop.z - 1) + crop.z * (nh * s - ch);
+      if (kx > 0) crop.x = clamp(drag.x - ((e.clientX - drag.sx) * 100) / kx, 0, 100);
+      if (ky > 0) crop.y = clamp(drag.y - ((e.clientY - drag.sy) * 100) / ky, 0, 100);
+      applyCrop();
+    });
+    const stop = () => { drag = null; box.classList.remove("dragging"); };
+    box.addEventListener("pointerup", stop);
+    box.addEventListener("pointercancel", stop);
+    syncPreview();
+
     openDialog("Personnaliser la ship", h("div", { class: "form" },
       field("Nom", name),
       h("p", { class: "hint" }, `Nom d’origine : ${g.defaultName}`),
       h("div", { class: "field" }, h("span", { class: "field-label" }, "Couleur du bloc"), h("div", { class: "picker-host" }, sw, noColor)),
       field("Bannière (adresse de l’image)", banner),
-      field("Image carrée de gauche (gif ou image)", gif1),
-      field("Image carrée de droite (gif ou image)", gif2),
+      box, h("div", { class: "crop-controls" }, zoom), cropMsg,
+      field("Image carrée n° 1 (gif ou image)", gif1),
+      field("Image carrée n° 2 (gif ou image)", gif2),
       h("p", { class: "hint" }, "Les images doivent déjà être hébergées quelque part (adresse commençant par https://). Laissez vide pour ne rien afficher."),
       err,
       h("div", { class: "dialog-actions" },
         btn("Annuler", closeDialog),
-        btn("Tout réinitialiser", () => { closeDialog(); RP.setShip(g.key, { name: "", color: "", banner: "", gif1: "", gif2: "" }); }),
+        btn("Tout réinitialiser", () => { closeDialog(); RP.setShip(g.key, { name: "", color: "", banner: "", banner_crop: "", gif1: "", gif2: "" }); }),
         btn("Enregistrer", () => {
-          for (const [label, el] of [["La bannière", banner], ["L’image de gauche", gif1], ["L’image de droite", gif2]]) {
+          for (const [label, el] of [["La bannière", banner], ["L’image 1", gif1], ["L’image 2", gif2]]) {
             if (el.value.trim() && !isUrl(el.value.trim())) { err.textContent = `${label} : l’adresse doit commencer par https://`; err.hidden = false; return; }
           }
           closeDialog();
-          RP.setShip(g.key, { name: name.value.trim(), color, banner: banner.value.trim(), gif1: gif1.value.trim(), gif2: gif2.value.trim() });
+          RP.setShip(g.key, { name: name.value.trim(), color, banner: banner.value.trim(), banner_crop: banner.value.trim() ? cropString(crop) : "", gif1: gif1.value.trim(), gif2: gif2.value.trim() });
         }, "btn-primary"))));
   }
 
   function shipCard(g) {
     const c = g.custom;
     const img = (cls, src) => { const el = h("img", { class: cls, src, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }); el.addEventListener("error", () => el.remove()); return el; };
+    let bannerBox = null;
+    if (isUrl(c.banner)) {
+      const im = img("ship-banner", c.banner);
+      im.setAttribute("style", cropStyle(parseCrop(c.banner_crop)));
+      bannerBox = h("div", { class: "ship-banner-box" }, im);
+      im.addEventListener("error", () => bannerBox.remove());
+    }
+    const gifs = [c.gif1, c.gif2].filter(isUrl).map((src) => img("ship-gif", src));
     return h("section", { class: "card ship-card" + (isHex(c.color) ? " ship-colored" : ""), style: isHex(c.color) ? `--ship:${c.color};--ship-tint:${rgba(c.color, 0.16)}` : null },
-      isUrl(c.banner) ? img("ship-banner", c.banner) : null,
+      bannerBox,
       h("div", { class: "ship-head" },
-        isUrl(c.gif1) ? img("ship-gif", c.gif1) : null,
+        gifs.length ? h("div", { class: "ship-gifs" }, gifs) : null,   // les deux images, cote a cote, avant le nom
         h("h2", { class: "card-title ship-name" }, g.name),
         iconBtn("pencil", "Personnaliser la ship", () => shipDialog(g), "btn-small"),
-        isUrl(c.gif2) ? img("ship-gif", c.gif2) : null,
         h("span", { class: "ship-tools" },
           h("span", { class: "sub ship-count" }, `${g.items.length} RP`),
           btn("Ajouter un RP", () => topicDialog(null, { archived: true, chars: RP.shipChars(g.key) }), "btn-small", "plus"))),

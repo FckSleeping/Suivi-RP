@@ -39,7 +39,9 @@ Trois onglets : Tableau de bord, Archives, Parametres.
   du plus ancien au plus recent d'apres la date du dernier message (celle du forum, lue une seule fois par la synchro ;
   ou la « date de fin » saisie a la main, qui l'emporte ; ou la date d'archivage en dernier recours).
   Le crayon du bloc le **personnalise** : nom (par defaut « Nom & Nom », a vous d'inventer le Brangelina), couleur,
-  banniere et deux images carrees (gifs) — des adresses `https://` d'images deja hebergees ailleurs. Le bouton
+  banniere et deux images carrees (gifs, cote a cote avant le nom) — des adresses `https://` d'images deja hebergees ailleurs.
+  La banniere se **recadre a la souris** dans la fenetre (glisser l'image, curseur de zoom) ; le rapport largeur/hauteur
+  (`aspect-ratio: 7 / 1`) se regle dans `theme.css`, pour `.ship-banner-box` et `.banner-crop` ensemble. Le bouton
   « Ajouter un RP » d'un bloc cree directement un RP termine avec les deux personnages de la ship deja choisis.
   « Ajouter un RP termine » (en haut) ajoute un RP fini sans passer par le tableau de bord ; la fleche courbe remet un RP
   dans le tableau de bord.
@@ -117,4 +119,4 @@ Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit
   sans elle, la couleur est relevee sur le forum, voir ci-dessous)
 - `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, note, archived, archived_at, side, ended}}`
   (`archived` : RP archive ; `side` : RP « hors ship » ; `ended` : date de fin AAAA-MM-JJ saisie a la main)
-- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name, color, banner, gif1, gif2}}` : personnalisation des blocs d'archives
+- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name, color, banner, banner_crop (« x,y,zoom »), gif1, gif2}}` : personnalisation des blocs d'archives
