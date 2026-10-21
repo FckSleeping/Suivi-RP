@@ -244,6 +244,10 @@
   "rmvc9rufis8": "2164"
  },
  "ships": {
+  "c11|c30": {
+   "declared": true,
+   "name": "maede"
+  },
   "c18|c37": {
    "banner": "https://i.imgur.com/buEnHAw.jpeg",
    "banner_crop": "100,54.9,1",
