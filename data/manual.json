@@ -245,6 +245,8 @@
  },
  "ships": {
   "c11|c30": {
+   "banner": "https://i.pinimg.com/736x/d5/99/4b/d5994b00c98249968fda9de0d440a1a1.jpg",
+   "banner_crop": "50,36.9,1",
    "declared": true,
    "name": "maede"
   },
