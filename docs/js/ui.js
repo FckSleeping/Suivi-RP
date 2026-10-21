@@ -294,6 +294,7 @@
       err,
       h("div", { class: "dialog-actions" },
         btn("Annuler", closeDialog),
+        c.declared ? btn("Supprimer la ship", () => { closeDialog(); RP.deleteShip(g.key); }, "btn-danger") : null,
         btn("Tout réinitialiser", () => { closeDialog(); RP.setShip(g.key, { name: "", color: "", banner: "", banner_crop: "", gif1: "", gif2: "" }); }),
         btn("Enregistrer", () => {
           for (const [label, el] of [["La bannière", banner], ["L’image 1", gif1], ["L’image 2", gif2]]) {
@@ -324,7 +325,31 @@
         h("span", { class: "ship-tools" },
           h("span", { class: "sub ship-count" }, `${g.items.length} RP`),
           btn("Ajouter un RP", () => topicDialog(null, { archived: true, chars: RP.shipChars(g.key) }), "btn-small", "plus"))),
-      h("ul", { class: "list" }, g.items.map(archiveItem)));
+      g.items.length ? h("ul", { class: "list" }, g.items.map(archiveItem)) : empty("Aucun RP terminé pour l’instant. Les RP « hors ship » de ses personnages apparaîtront ici."));
+  }
+
+  // Creer une ship : un personnage de chacune (au moins un)
+  function newShipDialog() {
+    const sel = {};
+    const fields = RP.players.map((p) => {
+      sel[p.key] = h("select", { class: "field-input" }, h("option", { value: "" }, "—"), RP.charsOf(p.key).map((c) => h("option", { value: c.id }, c.name)));
+      return h("label", { class: "field" }, h("span", { class: "field-label" }, `Personnage de ${p.label}`), sel[p.key]);
+    });
+    const name = h("input", { class: "field-input", type: "text", placeholder: "Facultatif : « Nom & Nom » sinon" });
+    const err = h("p", { class: "error", hidden: true });
+    openDialog("Créer une ship", h("div", { class: "form" },
+      h("p", { class: "hint" }, "Le bloc existe tout de suite dans les archives, même sans RP terminé, et garde son nom et son décor ensuite."),
+      fields,
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "Nom de la ship"), name),
+      err,
+      h("div", { class: "dialog-actions" },
+        btn("Annuler", closeDialog),
+        btn("Créer", () => {
+          const key = RP.players.map((p) => sel[p.key].value).join("|");
+          if (!key.replace("|", "")) { err.textContent = "Choisissez au moins un personnage."; err.hidden = false; return; }
+          const m = RP.addShip(key, name.value.trim());
+          if (m) { err.textContent = m; err.hidden = false; } else closeDialog();
+        }, "btn-primary"))));
   }
 
   function archives() {
@@ -332,10 +357,11 @@
     const out = [h("h2", { class: "page-title" }, "Archives"),
       h("div", { class: "filters" },
         btn("Ajouter un RP terminé", () => topicDialog(null, { archived: true }), "btn-primary", "plus"),
+        btn("Créer une ship", newShipDialog, "", "users"),
         h("span", { class: "sub" }, "Dans chaque bloc, du plus ancien au plus récent (date du dernier message).")),
     ];
     if (!ships.length) {
-      out.push(section("Aucun RP archivé", empty("Archivez un RP depuis le tableau de bord (icône d’archive), ou ajoutez ici un RP déjà terminé : ils seront classés par ship.")));
+      out.push(section("Aucun RP archivé", empty("Archivez un RP depuis le tableau de bord (icône d’archive), ou ajoutez ici un RP déjà terminé : ils seront classés par ship. Vous pouvez aussi créer une ship à l’avance.")));
     }
     ships.forEach((g) => out.push(shipCard(g)));
     return out;

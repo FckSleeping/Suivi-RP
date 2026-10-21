@@ -45,9 +45,14 @@ Trois onglets : Tableau de bord, Archives, Parametres.
   « Ajouter un RP » d'un bloc cree directement un RP termine avec les deux personnages de la ship deja choisis.
   « Ajouter un RP termine » (en haut) ajoute un RP fini sans passer par le tableau de bord ; la fleche courbe remet un RP
   dans le tableau de bord.
+- **Creer une ship a l'avance** (bouton « Creer une ship » dans Archives) : on choisit un personnage de chacune (au moins un)
+  et, si on veut, un nom. Le bloc existe tout de suite, meme sans RP termine, et garde son nom et son decor quand un RP
+  direct sera termine plus tard. Il accueille les RP « hors ship » de ses personnages, au lieu d'un bloc a part au nom d'un
+  seul personnage. Un personnage peut avoir plusieurs ships. « Supprimer la ship » (dans le crayon) retire la creation ; le
+  bloc ne reste que s'il contient des RP directs.
 - **RP « hors ship »** : case a cocher quand on archive ou modifie un RP archive. Un RP entre deux personnages qui ne forment
   pas une ship (ex. Leo x Maeve, alors que Leo est avec Felicy et Maeve avec Wade) apparait dans le bloc de CHACUN de ses
-  deux personnages, avec une petite icone de branche ; un personnage sans ship a un bloc a son nom.
+  deux personnages, avec une petite icone de branche ; un personnage sans aucune ship a un bloc a son nom.
 - **Parametres** : en premier la section **Personnages** (ajout de plusieurs noms d'un coup, joueuse, couleur de fond et de texte,
   suppression), puis le dernier controle du forum, la connexion a GitHub, le lien d'installation et la copie de `manual.json`.
   Les anciennes adresses `#/rp` et `#/characters` redirigent vers ces deux pages.
@@ -119,4 +124,5 @@ Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit
   sans elle, la couleur est relevee sur le forum, voir ci-dessous)
 - `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, note, archived, archived_at, side, ended}}`
   (`archived` : RP archive ; `side` : RP « hors ship » ; `ended` : date de fin AAAA-MM-JJ saisie a la main)
-- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name, color, banner, banner_crop (« x,y,zoom »), gif1, gif2}}` : personnalisation des blocs d'archives
+- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name, color, banner, banner_crop (« x,y,zoom »), gif1, gif2, declared}}`
+  (`declared` : ship creee a l'avance) : personnalisation des blocs d'archives

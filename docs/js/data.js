@@ -312,10 +312,22 @@
 
   // Blocs d'archives : un par ship. Un RP « hors ship » (side) apparait dans le bloc de CHACUN de ses deux personnages
   // (leur ship, ou un bloc a leur nom s'ils n'en ont pas). Dans chaque bloc, du plus ancien au plus recent.
+  // Creer / supprimer une ship a l'avance (avant tout RP termine) : elle garde son nom et son decor, et accueille les RP « hors ship » de ses personnages
+  RP.addShip = (key, name) => {
+    const cur = state.manual.ships[key] || {};
+    if (cur.declared) return "Cette ship existe déjà.";
+    state.manual.ships[key] = { ...cur, declared: true, ...(name ? { name } : {}) };
+    touch();
+    return "";
+  };
+  RP.deleteShip = (key) => { delete state.manual.ships[key]; touch(); };
+
   RP.ships = () => {
     const rows = RP.archivedRows();
-    const shipKeys = new Set(rows.filter((x) => !x.side).map(RP.shipKey));
+    const declared = Object.keys(state.manual.ships).filter((k) => state.manual.ships[k] && state.manual.ships[k].declared);
+    const shipKeys = new Set([...rows.filter((x) => !x.side).map(RP.shipKey), ...declared]);
     const groups = {};
+    declared.forEach((k) => { groups[k] = { key: k, items: [] }; });
     const add = (key, x, direct) => {
       const g = (groups[key] = groups[key] || { key, items: [] });
       if (!g.items.some((i) => i.x.id === x.id)) g.items.push({ x, direct });
