@@ -991,7 +991,8 @@
   },
   "tmvjybfyebv": {
    "name": "nightshift nurse x dayshift firefighter",
-   "order": 18
+   "order": 18,
+   "status": "waiting"
   }
  }
 }
