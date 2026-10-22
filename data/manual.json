@@ -912,6 +912,13 @@
    "name": "captive x captor",
    "order": 5,
    "status": "waiting"
+  },
+  "tmvjy3np3r8": {
+   "desc": "Deux amis d’enfance se perdent de vue avant de retomber amoureux.",
+   "name": "childhood friends to strangers to lovers",
+   "order": 6,
+   "ship": "c3|c23",
+   "status": "used"
   }
  }
 }
