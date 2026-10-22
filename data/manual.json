@@ -919,6 +919,11 @@
    "order": 6,
    "ship": "c3|c23",
    "status": "used"
+  },
+  "tmvjy4e77af": {
+   "desc": "Un personnage perd la mémoire et la romance doit se reconstruire.",
+   "name": "amnésie",
+   "order": 7
   }
  }
 }
