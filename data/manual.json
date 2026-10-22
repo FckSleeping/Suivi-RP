@@ -923,7 +923,8 @@
   "tmvjy4e77af": {
    "desc": "Un personnage perd la mémoire et la romance doit se reconstruire.",
    "name": "amnésie",
-   "order": 7
+   "order": 7,
+   "status": "waiting"
   }
  }
 }
