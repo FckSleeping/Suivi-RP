@@ -910,7 +910,7 @@
   },
   "tmvjy1q1h7a": {
    "desc": "Relation interdite où l’un est l’enseignant et l’autre l’élève.",
-   "name": "teacher x student",
+   "name": "Teacher x Student",
    "order": 4,
    "ship": "c9|c28",
    "status": "used"
