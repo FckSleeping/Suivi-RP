@@ -871,5 +871,14 @@
    "title": "criminal breath",
    "url": "/t43-criminal-breath-maeve"
   }
+ },
+ "tropes": {
+  "tmvjxyhfclt": {
+   "desc": "L'un des deux personnages est le boss de l'autre.",
+   "name": "office romance",
+   "order": 1,
+   "ship": "c10|c29",
+   "status": "used"
+  }
  }
 }
