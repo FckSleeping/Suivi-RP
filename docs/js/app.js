@@ -1,7 +1,7 @@
 // Demarrage, menu, navigation, barre d'enregistrement.
 (function () {
   const RP = window.RP, S = RP.state, h = RP.h;
-  const PAGES = [["dashboard", "Tableau de bord", "home"], ["archives", "Archives", "archive"], ["settings", "Paramètres", "settings"]];
+  const PAGES = [["dashboard", "Tableau de bord", "home"], ["tropes", "Tropes", "tag"], ["archives", "Archives", "archive"], ["settings", "Paramètres", "settings"]];
   // Anciennes adresses : #/rp -> tableau de bord, #/characters -> Parametres (section Personnages)
   const ALIASES = { rp: "dashboard", characters: "settings" };
   const raw = () => location.hash.replace(/^#\/?/, "").split("?")[0] || "dashboard";

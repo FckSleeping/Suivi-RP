@@ -25,7 +25,7 @@ Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont dans
 (Settings > Secrets and variables > Actions) : `FORUM_USER` et `FORUM_PASSWORD`.
 
 ## Utiliser la page
-Trois onglets : Tableau de bord, Archives, Parametres.
+Quatre onglets : Tableau de bord, Tropes, Archives, Parametres.
 - **Tableau de bord** : deux compteurs en haut (« Au tour de Fanny », « Au tour d'Ambre »), puis la liste des RP :
   « Ajouter un RP » = coller le lien du sujet, choisir le personnage de chacune, cocher NSFW si besoin. Le titre est repris
   du lien (modifiable). Un RP sans lien (pas encore commence) est possible. Colonne « Etat » = a qui le tour, toujours deduit de
@@ -33,6 +33,16 @@ Trois onglets : Tableau de bord, Archives, Parametres.
   dernier message a change, et disparait toute seule a la synchro suivante : rien a valider. L'icone corbeille retire le RP
   de la liste (rien n'est touche sur le forum) ; quand un RP est fini, on modifie simplement le lien/titre pour en suivre
   un autre a la place.
+- **Tropes** : votre liste de tropes, sur le modele d'un tableau (Nom, Description courte, Etat, Ship). L'etat (« Utilise »,
+  « En attente », ou « - ») se change directement dans le menu de la ligne et s'enregistre tout de suite. La colonne Ship affiche
+  le nom du ship sur un **degrade** de la couleur du personnage de Fanny vers celle du personnage d'Ambre, texte blanc.
+  « Ajouter un trope » ouvre un formulaire (nom, description, etat, ship : on choisit un ship existant ou un personnage de chacune ;
+  choisir un ship passe l'etat sur « Utilise » si rien n'etait choisi). « Ajouter plusieurs » accepte un trope par ligne
+  (`Nom | description`, ou deux colonnes collees depuis un tableur). Les en-tetes Nom, Etat et Ship trient la liste.
+  **Couleur du texte** : blanc pour tous les ships par defaut (`--trope-ship-text` dans `theme.css`, ainsi que l'ombrage
+  `--trope-ship-shadow` et la mise en majuscules dans `.ship-pill`) ; pour un ship precis, champ « Couleur du texte du ship » de
+  la fenetre « Modifier ce trope » (ecrit `text_color` dans `ships`). Les etats proposes se definissent dans `tropeStatuses`
+  (`docs/js/config.js`) et leurs couleurs dans `theme.css` (`.trope-state[data-state="..."]`).
 - **Archiver un RP** (icone d'archive sur sa ligne) : une fenetre propose de le remplacer par le nouveau (lien et titre
   facultatifs ; le nouveau garde les memes personnages et la meme place dans la liste) ou de l'archiver seulement.
 - **Archives** : les RP termines, classes par ship (couple « personnage de Fanny + personnage d'Ambre »). Dans chaque bloc,
@@ -124,5 +134,8 @@ Un nouveau RP recoit son etat (« a qui le tour ») a la prochaine synchro, soit
   sans elle, la couleur est relevee sur le forum, voir ci-dessous)
 - `topics` : `{id: {order, url, title, chars: {compte_joueuse: id_personnage}, nsfw, note, archived, archived_at, side, ended}}`
   (`archived` : RP archive ; `side` : RP « hors ship » ; `ended` : date de fin AAAA-MM-JJ saisie a la main)
-- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name, color, banner, banner_crop (« x,y,zoom »), gif1, gif2, declared}}`
-  (`declared` : ship creee a l'avance) : personnalisation des blocs d'archives
+- `ships` : `{"id_perso_Fanny|id_perso_Ambre": {name, color, banner, banner_crop (« x,y,zoom »), gif1, gif2, declared, text_color}}`
+  (`declared` : ship creee a l'avance ; `text_color` : couleur du texte de la pastille du ship dans l'onglet Tropes) :
+  personnalisation des blocs d'archives et des pastilles de tropes
+- `tropes` : `{id: {order, name, desc, status, ship}}` (`status` : cle d'un etat de `tropeStatuses`, ex. `used` / `waiting` ;
+  `ship` : cle de ship « id_perso_Fanny|id_perso_Ambre », une moitie peut manquer)

@@ -20,7 +20,7 @@
 
   const norm = (s) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   RP.norm = norm;
-  const emptyManual = () => ({ schema: 2, characters: {}, topics: {}, ships: {}, seen: {} });
+  const emptyManual = () => ({ schema: 2, characters: {}, topics: {}, ships: {}, tropes: {}, seen: {} });
 
   function sortKeys(v) {
     if (Array.isArray(v)) return v.map(sortKeys);
@@ -93,7 +93,7 @@
   function apply(d) {
     const m = Object.assign(emptyManual(), d.manual);
     ["forum_rules", "forum_names", "replacements"].forEach((k) => delete m[k]); // anciens reglages abandonnes
-    ["characters", "topics", "ships", "seen"].forEach((k) => (m[k] = m[k] && typeof m[k] === "object" ? m[k] : {}));
+    ["characters", "topics", "ships", "tropes", "seen"].forEach((k) => (m[k] = m[k] && typeof m[k] === "object" ? m[k] : {}));
     m.schema = 2;
     // Tolerance aux modifications faites a la main dans manual.json
     const playerKey = (v) => { const s = norm(v); const p = C.players.find((x) => norm(x.key) === s || norm(x.label) === s); return p ? p.key : v; };
@@ -111,6 +111,7 @@
       if (!e.chars || typeof e.chars !== "object" || Array.isArray(e.chars)) delete e.chars;
       else Object.keys(e.chars).forEach((p) => { const k = playerKey(p); if (k !== p) { e.chars[k] = e.chars[p]; delete e.chars[p]; } });
     });
+    Object.keys(m.tropes).forEach((id) => { const t = m.tropes[id]; if (!t || typeof t !== "object" || Array.isArray(t)) delete m.tropes[id]; });
     d.forum.topics = d.forum.topics || {};
     Object.assign(state, { forum: d.forum, manual: m, base: JSON.parse(JSON.stringify(m)), status: d.status, source: d.source, dirty: 0, error: "", saveStatus: "", saveError: "" });
     emit();
@@ -348,6 +349,47 @@
     })).sort((a, b) => norm(a.name).localeCompare(norm(b.name)));
   };
 
+  // ------------------------------------------------------------------ tropes
+  // { order, name, desc, status, ship } : « status » = cle d'un etat de RP_CONFIG.tropeStatuses ; « ship » = cle d'une ship (« id Fanny | id Ambre »).
+  RP.tropeStatuses = C.tropeStatuses || [{ key: "used", label: "Utilisé" }, { key: "waiting", label: "En attente" }];
+  RP.tropeStatusLabel = (k) => (RP.tropeStatuses.find((s) => s.key === k) || {}).label || k || "-";
+
+  // Pastille de ship d'un trope : nom + degrade de la couleur du personnage de la 1re joueuse vers celle de la 2e.
+  // Un seul personnage connu : couleur unie. Aucun : pas de pastille. « text » = couleur de texte propre a cette ship (sinon theme.css).
+  RP.tropeShip = (key) => {
+    if (!key) return null;
+    const colors = key.split("|").filter((id) => id && state.manual.characters[id]).map((id) => RP.colorOf(state.manual.characters[id]));
+    if (!colors.length) return null;
+    const tc = RP.shipCustom(key).text_color;
+    return { key, name: RP.shipName(key), from: colors[0], to: colors[colors.length - 1], text: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(tc || "") ? tc : "" };
+  };
+  RP.tropes = () => Object.entries(state.manual.tropes)
+    .map(([id, t]) => ({ id, order: t.order || 0, name: t.name == null ? "" : String(t.name), desc: t.desc == null ? "" : String(t.desc), status: t.status || "", shipKey: t.ship || "", ship: RP.tropeShip(t.ship) }))
+    .sort((a, b) => a.order - b.order);
+  const maxTropeOrder = () => Math.max(0, ...Object.values(state.manual.tropes).map((t) => t.order || 0));
+  RP.saveTrope = (id, f) => {
+    const name = (f.name || "").trim();
+    if (!name) return "Donnez un nom au trope.";
+    if (!id) id = nextId("t", state.manual.tropes);
+    const prev = state.manual.tropes[id] || {};
+    state.manual.tropes[id] = clean({ order: prev.order || maxTropeOrder() + 1, name, desc: (f.desc || "").trim(), status: f.status || "", ship: f.ship || "" });
+    touch();
+    return "";
+  };
+  // Ajout de plusieurs tropes d'un coup : [{ name, desc }]
+  RP.addTropes = (list) => {
+    let order = maxTropeOrder();
+    list.forEach((t) => { state.manual.tropes[nextId("t", state.manual.tropes)] = clean({ order: ++order, name: t.name, desc: t.desc || "" }); });
+    touch();
+  };
+  RP.setTrope = (id, patch, rerender = true) => {
+    const t = state.manual.tropes[id];
+    if (!t) return;
+    Object.entries(patch).forEach(([k, v]) => { if (v === null || v === undefined || v === "") delete t[k]; else t[k] = v; });
+    touch(rerender);
+  };
+  RP.deleteTrope = (id) => { delete state.manual.tropes[id]; touch(); };
+
   RP.deleteTopic = (id) => { delete state.manual.topics[id]; touch(); };
 
   RP.addCharacters = (names, player) => {
@@ -389,7 +431,7 @@
   function merge3(base, local, remote) {
     const out = JSON.parse(JSON.stringify(remote));
     out.schema = 2;
-    ["characters", "topics", "ships", "seen"].forEach((col) => {
+    ["characters", "topics", "ships", "tropes", "seen"].forEach((col) => {
       const b = base[col] || {}, l = local[col] || {}, r = (out[col] = out[col] || {});
       new Set([...Object.keys(b), ...Object.keys(l)]).forEach((k) => {
         if (JSON.stringify(l[k]) !== JSON.stringify(b[k])) { if (l[k] === undefined) delete r[k]; else r[k] = l[k]; }

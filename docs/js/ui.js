@@ -39,6 +39,7 @@
     branch: '<circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.2v9.6"/><path d="M18 10.2c0 4-5 3.5-10.5 7"/>',
     undo: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
     settings: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+    tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
   };
   function icon(name) {
     const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -54,7 +55,7 @@
   const section = (title, ...kids) => h("section", { class: "card" }, h("h2", { class: "card-title" }, title), ...kids);
   const goto = (page) => { location.hash = `#/${page}`; };
 
-  const ui = (RP.ui = { rp: { q: "", char: "", turn: "", nsfw: false, sort: "order", dir: 1 } });
+  const ui = (RP.ui = { rp: { q: "", char: "", turn: "", nsfw: false, sort: "order", dir: 1 }, tropes: { q: "", status: "", sort: "order", dir: 1 } });
 
   // ------------------------------------------------------------------ dialogue
   const dlg = () => document.getElementById("dialog");
@@ -189,6 +190,159 @@
           const m = RP.archive(id, { url: url.value, title: title.value }, { side: side.checked });
           if (m) fail(m); else closeDialog();
         }, "btn-primary"))));
+  }
+
+  // ------------------------------------------------------------------ TROPES (nom, description, état, ship)
+  const shipPill = (s) => (s ? h("span", { class: "ship-pill", style: `--ship-from:${s.from};--ship-to:${s.to}` + (s.text ? `;--ship-text:${s.text}` : "") }, s.name) : null);
+
+  // Menu d'etat directement dans le tableau : le changement s'enregistre tout de suite
+  function stateSelect(t) {
+    const known = RP.tropeStatuses.some((s) => s.key === t.status);
+    const sel = h("select", {
+      class: "trope-state", "data-state": t.status, "aria-label": `État : ${t.name}`, value: t.status,
+      onchange: (e) => { sel.setAttribute("data-state", e.target.value); RP.setTrope(t.id, { status: e.target.value }, false); },
+    }, h("option", { value: "" }, "-"), RP.tropeStatuses.map((s) => h("option", { value: s.key }, s.label)),
+    t.status && !known ? h("option", { value: t.status }, t.status) : null);
+    return sel;
+  }
+
+  function tropes() {
+    const f = ui.tropes;
+    const wrap = h("div", {});
+    const box = h("div", { class: "table-wrap" });
+    const rank = (s) => { const i = RP.tropeStatuses.findIndex((x) => x.key === s); return s ? (i < 0 ? 98 : i) : 99; };
+    const sortKey = { order: (t) => t.order, name: (t) => norm(t.name), status: (t) => rank(t.status), ship: (t) => (t.ship ? norm(t.ship.name) : "~") };
+
+    function drawTable() {
+      const all = RP.tropes();
+      const items = all.filter((t) => {
+        if (f.q && !norm([t.name, t.desc, t.ship ? t.ship.name : ""].join(" ")).includes(norm(f.q))) return false;
+        if (f.status === "none") return !t.status;
+        if (f.status && t.status !== f.status) return false;
+        return true;
+      });
+      const key = sortKey[f.sort] || sortKey.order;
+      items.sort((a, b) => (key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0) * f.dir);
+      const th = (label, k) => h("th", { class: "sortable" + (f.sort === k ? " sorted" : "") },
+        h("button", { type: "button", class: "th-btn", onclick: () => { f.dir = f.sort === k ? -f.dir : 1; f.sort = k; drawTable(); } }, label, f.sort === k ? (f.dir > 0 ? " ▲" : " ▼") : ""));
+
+      box.replaceChildren(items.length
+        ? h("table", { class: "table tracker tropes-table" },
+            h("thead", {}, h("tr", {}, th("Nom", "name"), h("th", {}, "Description courte"), th("État", "status"), th("Ship", "ship"), h("th", {}, ""))),
+            h("tbody", {}, items.map((t) => h("tr", {},
+              h("td", { class: "cell-title" }, h("strong", {}, t.name)),
+              h("td", { class: "cell-desc" }, t.desc),
+              h("td", { class: "cell-state" }, stateSelect(t)),
+              h("td", { class: "cell-ship" }, shipPill(t.ship)),
+              h("td", { class: "cell-actions" },
+                iconBtn("pencil", "Modifier", () => tropeDialog(t.id), "btn-small"),
+                iconBtn("trash", "Supprimer", () => confirmDeleteTrope(t), "btn-small btn-danger"))))))
+        : h("div", { class: "empty-box" },
+            empty(all.length ? "Aucun trope ne correspond à ces filtres." : "Aucun trope pour l’instant : ajoutez-en un, ou collez toute votre liste d’un coup."),
+            all.length ? btn("Effacer les filtres", () => { Object.assign(f, { q: "", status: "" }); build(); }, "btn-small") : null));
+    }
+
+    function build() {
+      const bar = h("div", { class: "filters" },
+        h("input", { class: "field-input", type: "search", placeholder: "Rechercher un trope, une description ou un ship…", value: f.q, oninput: (e) => { f.q = e.target.value; drawTable(); } }),
+        h("select", { class: "field-input", value: f.status, onchange: (e) => { f.status = e.target.value; drawTable(); } },
+          h("option", { value: "" }, "Tous les états"), RP.tropeStatuses.map((s) => h("option", { value: s.key }, s.label)), h("option", { value: "none" }, "Sans état")),
+        btn("Ajouter un trope", () => tropeDialog(), "btn-primary", "plus"),
+        btn("Ajouter plusieurs", bulkTropesDialog, "", "list"));
+      wrap.replaceChildren(bar, box);
+      drawTable();
+    }
+    build();
+    return [wrap];
+  }
+
+  // Ships proposes dans le formulaire : ceux des archives, des RP en cours et deja personnalises (deux personnages connus)
+  function knownShipKeys() {
+    const keys = new Set([...RP.ships().map((g) => g.key), ...RP.rows().map(RP.shipKey), ...Object.keys(S.manual.ships)]);
+    return [...keys].filter((k) => { const ids = k.split("|"); return ids.length === RP.players.length && ids.every((id) => id && S.manual.characters[id]); })
+      .sort((a, b) => norm(RP.shipName(a)).localeCompare(norm(RP.shipName(b))));
+  }
+
+  function tropeDialog(id) {
+    const e = id ? S.manual.tropes[id] || {} : {};
+    const name = h("input", { class: "field-input", type: "text", value: e.name || "", placeholder: "Ex. Office Romance" });
+    const desc = h("textarea", { class: "field-input", rows: 2, placeholder: "Facultatif : l’idée du trope en une phrase" }, e.desc || "");
+    const status = h("select", { class: "field-input", value: e.status || "" }, h("option", { value: "" }, "-"), RP.tropeStatuses.map((s) => h("option", { value: s.key }, s.label)));
+    const sel = {};
+    const startIds = (e.ship || "").split("|");
+    const shipKey = () => RP.players.map((p) => sel[p.key].value).join("|");
+    const known = h("select", { class: "field-input" }, h("option", { value: "" }, "—"), knownShipKeys().map((k) => h("option", { value: k }, RP.shipName(k))));
+    const touched = (fromKnown) => {
+      const k = shipKey();
+      if (!fromKnown) known.value = [...known.options].some((o) => o.value === k) ? k : "";
+      if (k.replace(/\|/g, "") && !status.value && RP.tropeStatuses.some((s) => s.key === "used")) status.value = "used"; // un trope avec une ship est « utilisé » (modifiable)
+    };
+    const charFields = RP.players.map((p, i) => {
+      sel[p.key] = h("select", { class: "field-input", value: S.manual.characters[startIds[i]] ? startIds[i] : "", onchange: () => touched(false) },
+        h("option", { value: "" }, "—"), RP.charsOf(p.key).map((c) => h("option", { value: c.id }, c.name)));
+      return h("label", { class: "field" }, h("span", { class: "field-label" }, `Personnage ${RP.de(p.label)}`), sel[p.key]);
+    });
+    known.addEventListener("change", () => {
+      if (known.value) { const ids = known.value.split("|"); RP.players.forEach((p, i) => { sel[p.key].value = ids[i] || ""; }); }
+      touched(true);
+    });
+    known.value = [...known.options].some((o) => o.value === e.ship) ? e.ship : "";
+
+    // Couleur du texte de la pastille (propre a la ship ; blanc par defaut, voir --trope-ship-text dans theme.css)
+    const cur = RP.shipCustom(e.ship || "").text_color;
+    let textColor = /^#[0-9a-f]{6}$/i.test(cur || "") ? cur : "", textTouched = false;
+    const tsw = colorPicker({ value: textColor || "#ffffff", inline: true, onChange: (hx) => { textColor = hx; textTouched = true; } });
+    const tReset = btn("Blanc par défaut", () => { closePicker(); textColor = ""; textTouched = true; tsw.style.setProperty("--c", "#ffffff"); }, "btn-small");
+    const err = h("p", { class: "error", hidden: true });
+
+    openDialog(id ? "Modifier ce trope" : "Ajouter un trope", h("div", { class: "form" },
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "Nom"), name),
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "Description courte"), desc),
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "État"), status),
+      h("label", { class: "field" }, h("span", { class: "field-label" }, "Ship (si le trope est utilisé)"), known),
+      charFields,
+      h("p", { class: "hint" }, `Choisissez un ship existant, ou un personnage de chacune. La pastille est un dégradé de la couleur du personnage ${RP.de(RP.players[0].label)} vers celle du personnage ${RP.de(RP.players[1].label)}.`),
+      h("div", { class: "field" }, h("span", { class: "field-label" }, "Couleur du texte du ship"), h("div", { class: "picker-host" }, tsw, tReset)),
+      err,
+      h("div", { class: "dialog-actions" },
+        id ? btn("Supprimer", () => confirmDeleteTrope({ id, name: e.name || "" }), "btn-danger") : null,
+        btn("Annuler", closeDialog),
+        btn(id ? "Enregistrer" : "Ajouter", () => {
+          const key = shipKey().replace(/\|/g, "") ? shipKey() : "";
+          const msg = RP.saveTrope(id, { name: name.value, desc: desc.value, status: status.value, ship: key });
+          if (msg) { err.textContent = msg; err.hidden = false; return; }
+          if (key && textTouched) RP.setShip(key, { text_color: textColor });
+          closeDialog();
+        }, "btn-primary"))));
+  }
+
+  // Ajout en masse : un trope par ligne, « Nom | description » (ou deux colonnes collees depuis un tableur)
+  function bulkTropesDialog() {
+    const text = h("textarea", { class: "field-input", rows: 10, placeholder: "Office Romance | L’un des deux personnages est le boss de l’autre.\nRoyalty x Guard | L’un des personnages est le garde royal de l’autre.\nSnowed In" });
+    const err = h("p", { class: "error", hidden: true });
+    openDialog("Ajouter plusieurs tropes", h("div", { class: "form" },
+      h("p", { class: "hint" }, "Un trope par ligne. Pour ajouter la description : Nom | description. Vous pouvez aussi coller deux colonnes (nom, description) copiées depuis un tableur. L’état et la ship se règlent ensuite dans le tableau."),
+      text, err,
+      h("div", { class: "dialog-actions" },
+        btn("Annuler", closeDialog),
+        btn("Ajouter", () => {
+          const list = text.value.split(/\r?\n/).map((l) => {
+            const parts = (l.includes("\t") ? l.split("\t") : l.split("|")).map((s) => s.trim());
+            return { name: parts[0] || "", desc: parts[1] || "" };
+          }).filter((t) => t.name);
+          if (!list.length) { err.textContent = "Écrivez au moins un nom de trope."; err.hidden = false; return; }
+          closeDialog();
+          RP.addTropes(list);
+        }, "btn-primary"))));
+  }
+
+  function confirmDeleteTrope(t) {
+    openDialog("Supprimer ce trope ?", h("div", {},
+      h("p", {}, h("strong", {}, t.name)),
+      h("p", { class: "hint" }, "Il disparaît simplement de cette liste. Les ships et les RP ne sont pas touchés."),
+      h("div", { class: "dialog-actions" },
+        btn("Annuler", closeDialog),
+        btn("Supprimer", () => { closeDialog(); RP.deleteTrope(t.id); }, "btn-primary btn-danger"))));
   }
 
   // ------------------------------------------------------------------ ARCHIVES (par ship, du plus ancien au plus recent)
@@ -673,7 +827,7 @@
     return out;
   }
 
-  RP.views = { dashboard, archives, settings: settingsView };
+  RP.views = { dashboard, tropes, archives, settings: settingsView };
   RP.h = h; RP.btn = btn;
   RP.sourceForm = sourceForm;
 })();
