@@ -226,7 +226,7 @@ select.field-input { cursor: pointer; }
 /* ---------- Tableaux ---------- */
 .table-wrap { background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--glass-shadow), var(--specular); }
 .card .table-wrap { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 0; }
-.table th { padding: 0.8rem 0.75rem; font-size: 0.74rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--glass-line); white-space: nowrap; }
+.table th { padding: 0.8rem 0.75rem; font-size: 0.74rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--glass-line); white-space: nowrap; font-family: monospace;}
 .table th.sorted { color: var(--accent); }
 .th-btn { text-transform: inherit; letter-spacing: inherit; font-weight: inherit; }
 .table td { padding: 0.7rem 0.75rem; border-bottom: 1px solid var(--glass-line); vertical-align: top; }
