@@ -944,6 +944,13 @@
    "order": 10,
    "ship": "c4|c24",
    "status": "used"
+  },
+  "tmvjy88qvjr": {
+   "desc": "Deux ex restent liés par un désir jamais éteint malgré la rupture.",
+   "name": "unresolved tension",
+   "order": 11,
+   "ship": "c16|c35",
+   "status": "used"
   }
  }
 }
