@@ -979,44 +979,36 @@
   "tmvjya11txr": {
    "desc": "Deux personnes d'une fraternité/sororité rivales qui se bagarrent jusqu'à se pécho.",
    "name": "ΩΨΦ",
-   "order": 15,
-   "status": "waiting"
+   "order": 15
   },
   "tmvjyajv8zz": {
    "desc": "Deux personnes finissent par se lier d'amitié et d'amour suite à une échange de SMS hasardeux sans se connaître au préalable.",
    "name": "Stranger's SMS",
-   "order": 16,
-   "status": "waiting"
+   "order": 16
   },
   "tmvjyb1des3": {
    "name": "Don's daughter x FBI agent",
-   "order": 17,
-   "status": "waiting"
+   "order": 17
   },
   "tmvjybfyebv": {
    "name": "Nightshift Nurse x Dayshift Firefighter",
-   "order": 18,
-   "status": "waiting"
+   "order": 18
   },
   "tmvjybqvnde": {
    "name": "Therapist x Patient",
-   "order": 19,
-   "status": "waiting"
+   "order": 19
   },
   "tmvjycov7hp": {
    "name": "Serial Killer x True Crime Podcaster",
-   "order": 20,
-   "status": "waiting"
+   "order": 20
   },
   "tmvjyd0qja0": {
    "name": "Villain x Hero's Wife",
-   "order": 21,
-   "status": "waiting"
+   "order": 21
   },
   "tmvjydb8hrr": {
    "name": "Religious x Monster",
-   "order": 22,
-   "status": "waiting"
+   "order": 22
   }
  }
 }
