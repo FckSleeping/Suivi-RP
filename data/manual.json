@@ -899,14 +899,12 @@
   "tmvjy0c1rq2": {
    "desc": "L'un des personnages est le garde royal de l'autre.",
    "name": "Royalty x Guard",
-   "order": 2,
-   "status": "waiting"
+   "order": 2
   },
   "tmvjy1203w1": {
    "desc": "L'un des personnages est hotesse de l'air/stewart et voyage beaucoup (donc pas le temps de commencer une relation)",
    "name": "Plane Mode",
-   "order": 3,
-   "status": "waiting"
+   "order": 3
   },
   "tmvjy1q1h7a": {
    "desc": "Relation interdite où l’un est l’enseignant et l’autre l’élève.",
