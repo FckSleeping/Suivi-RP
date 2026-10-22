@@ -892,6 +892,11 @@
    "desc": "L'un des personnages est le garde royal de l'autre.",
    "name": "royalty x guard",
    "order": 2
+  },
+  "tmvjy1203w1": {
+   "desc": "L'un des personnages est hotesse de l'air/stewart et voyage beaucoup (donc pas le temps de commencer une relation)",
+   "name": "plane mode",
+   "order": 3
   }
  }
 }
