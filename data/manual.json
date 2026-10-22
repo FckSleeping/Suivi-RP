@@ -897,6 +897,13 @@
    "desc": "L'un des personnages est hotesse de l'air/stewart et voyage beaucoup (donc pas le temps de commencer une relation)",
    "name": "plane mode",
    "order": 3
+  },
+  "tmvjy1q1h7a": {
+   "desc": "Relation interdite où l’un est l’enseignant et l’autre l’élève.",
+   "name": "teacher x student",
+   "order": 4,
+   "ship": "c9|c28",
+   "status": "used"
   }
  }
 }
