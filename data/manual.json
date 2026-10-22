@@ -964,6 +964,13 @@
    "order": 13,
    "ship": "c5|c25",
    "status": "used"
+  },
+  "tmvjy9qnj9w": {
+   "desc": "Un personnage idolâtre l’autre au point de se soumettre totalement.",
+   "name": "worship kink",
+   "order": 14,
+   "ship": "c13|c32",
+   "status": "used"
   }
  }
 }
