@@ -294,6 +294,10 @@
    "banner_crop": "50,36.5,1",
    "name": "luwell"
   },
+  "c8|c27": {
+   "declared": true,
+   "name": "asmel"
+  },
   "c9|c28": {
    "banner": "https://i.imgur.com/SRG9Nyp.png",
    "banner_crop": "50,64.7,1",
