@@ -971,6 +971,12 @@
    "order": 14,
    "ship": "c13|c32",
    "status": "used"
+  },
+  "tmvjya11txr": {
+   "desc": "Deux personnes d'une fraternité/sororité rivales qui se bagarrent jusqu'à se pécho.",
+   "name": "ΩΨΦ",
+   "order": 15,
+   "status": "waiting"
   }
  }
 }
