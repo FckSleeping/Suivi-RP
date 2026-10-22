@@ -372,3 +372,51 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .banner-crop img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; }
 .crop-controls { margin: 0.6rem 0 0.2rem; }
 .crop-zoom { background: linear-gradient(to right, var(--accent-soft), var(--accent)); }
+
+/* ==========================================================================
+   TROPES (onglet entre Tableau de bord et Archives) - rien d'existant n'est modifie
+   ========================================================================== */
+:root {
+  /* Texte du nom de ship : blanc par defaut. Changez ici pour TOUTES les ships ;
+     un ship precis se regle dans la fenetre « Modifier ce trope » (champ « Couleur du texte du ship »). */
+  --trope-ship-text: #ffffff;
+  --trope-ship-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);   /* petit ombrage pour rester lisible sur les couleurs claires ; « none » pour le retirer */
+ 
+  /* Menu d'etat */
+  --trope-used-bg: rgba(31, 157, 99, 0.2);     --trope-used-text: #17744a;
+  --trope-waiting-bg: rgba(255, 140, 80, 0.3); --trope-waiting-text: #a4470f;
+}
+:root[data-theme="dark"] {
+  --trope-used-bg: rgba(82, 212, 154, 0.2);    --trope-used-text: #7be3b4;
+  --trope-waiting-bg: rgba(255, 160, 100, 0.22); --trope-waiting-text: #ffb98a;
+}
+ 
+.tropes-table td { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.tropes-table tbody tr:nth-child(even) { background: rgba(120, 110, 170, 0.06); }
+.tropes-table .cell-title { min-width: 200px; white-space: nowrap; }
+.tropes-table .cell-desc { min-width: 260px; font-size: 0.85rem; color: var(--muted); }
+.tropes-table .cell-state, .tropes-table .cell-ship { white-space: nowrap; }
+.tropes-table .cell-ship { text-align: center; }
+ 
+/* Nom du ship : degrade de la couleur du personnage de Fanny vers celle du personnage d'Ambre */
+.ship-pill {
+  display: inline-block; min-width: 7rem; padding: 0.45rem 1.1rem; border-radius: 15px; text-align: center;
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap;
+  background: linear-gradient(90deg, var(--ship-from, #999), var(--ship-to, #999));
+  color: var(--ship-text, var(--trope-ship-text)); text-shadow: var(--trope-ship-shadow);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 6px rgba(40, 30, 90, 0.16);
+}
+ 
+/* Menu d'etat en forme de pastille */
+.trope-state {
+  -webkit-appearance: none; appearance: none; font: inherit; font-size: 0.85rem; font-weight: 650;
+  min-width: 8rem; padding: 0.4rem 2rem 0.4rem 0.95rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--glass-border); color: var(--muted); background-color: var(--glass);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236c6c7e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.8rem center; background-size: 0.65rem;
+  box-shadow: var(--specular); transition: background-color var(--transition), box-shadow var(--transition);
+}
+.trope-state:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+.trope-state[data-state="used"] { background-color: var(--trope-used-bg); color: var(--trope-used-text); }
+.trope-state[data-state="waiting"] { background-color: var(--trope-waiting-bg); color: var(--trope-waiting-text); }
+.trope-state option { color: var(--text); background: var(--bg); }
