@@ -937,6 +937,13 @@
    "name": "survival romance",
    "order": 9,
    "status": "waiting"
+  },
+  "tmvjy7ihkbh": {
+   "desc": "L’ancien harceleur tombe amoureux de sa victime.",
+   "name": "old's bully love",
+   "order": 10,
+   "ship": "c4|c24",
+   "status": "used"
   }
  }
 }
