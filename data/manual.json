@@ -244,6 +244,10 @@
   "rmvc9rufis8": "2164"
  },
  "ships": {
+  "c10|c29": {
+   "declared": true,
+   "name": "mirleen"
+  },
   "c11|c30": {
    "banner": "https://i.imgur.com/JpduLzk.png",
    "banner_crop": "50,46.3,1",
