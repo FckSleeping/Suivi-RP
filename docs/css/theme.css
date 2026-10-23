@@ -9,6 +9,10 @@
    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
    ========================================================================== */
 
+html {
+    zoom: 0.8;
+}
+
 :root {
   /* Fond : un degrade lumineux sur lequel le verre vient se poser */
   --bg: #f4f3fb;
