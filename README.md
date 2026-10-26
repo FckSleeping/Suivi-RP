@@ -16,9 +16,11 @@ est le tour.
 - `scripts/sync.py` : la synchronisation (toutes les 30 min). `scripts/proto_forum.py` : briques de lecture du forum
   (et son mode `--discover`, qui sert a explorer le forum a la main).
 - `scripts/check_connexion.py` : test de connexion depuis GitHub Actions.
+- `scripts/export_archives.py` : export du texte des RP archives (un fichier par RP, pour une IA qui fera le recap).
 - `data/manual.json` : VOTRE liste (personnages, RP, notes). Jamais ecrit par la synchro.
 - `data/forum.json`, `data/status.json` : ecrits par la synchro uniquement.
-- `.github/workflows/` : `test-connexion.yml`, `synchro.yml` (declenchee par cron-job.org).
+- `data/textes_archives/` : ecrit par l'export des archives uniquement (voir « Exporter les archives pour un recap »).
+- `.github/workflows/` : `test-connexion.yml`, `synchro.yml` (declenchee par cron-job.org), `export-archives.yml` (a lancer a la main).
 
 ## Identifiants
 Les identifiants du compte de lecture ne sont JAMAIS dans le code. Ils sont dans les Secrets du depot
@@ -104,6 +106,37 @@ apparaissent dans Parametres > « Dernier controle du forum ».
 
 Pour le depannage, quand le dernier message d'un sujet n'a ni auteur ni date lisibles, sa fiche dans `data/forum.json`
 contient une cle `diag` (nombre d'elements candidats, de messages retenus, balise et classes du dernier ; aucun texte du forum).
+
+## Exporter les archives pour un recap
+Onglet Actions > « Export des archives (textes) » > Run workflow. Le script relit chaque RP archive **du premier au dernier
+message** et ecrit un fichier par RP dans `data/textes_archives/` (`t176-titre-du-rp.txt`). Chaque fichier contient seulement le
+titre, les personnages de votre liste, puis, dans l'ordre, le pseudo du compte et le texte de chaque message :
+
+    [Pseudo]
+    Texte du message...
+
+    [AutrePseudo]
+    Texte du message...
+
+Ne sont pas gardes : les dates, les signatures, les citations d'un message precedent (`blockquote`), les images et les
+notes « Derniere edition par ». Les dialogues colores, eux, sont conserves. Un message qui ne contient qu'une image est saute.
+- **Reprise** : un RP deja exporte n'est pas relu (un RP archive est termine). Cochez « force » pour tout refaire, ou indiquez
+  un numero de sujet pour n'en refaire qu'un (ce numero peut aussi etre celui d'un RP non archive). Si l'export est interrompu,
+  les RP deja lus sont quand meme enregistres, et la fois suivante reprend avec les autres.
+- **RP tres long** : au-dela de 300 000 caracteres (environ 80 000 mots), le RP est coupe en `-partie1`, `-partie2`... entre deux
+  messages, pour tenir dans une conversation avec une IA. Reglage : `--max-chars` (0 = jamais de coupure).
+- **Duree** : environ une seconde par page du forum ; un long RP prend quelques minutes, tous les RP d'un coup peuvent
+  prendre une heure ou plus.
+- **Recuperer les fichiers** : sur GitHub, dossier `data/textes_archives/`, ouvrir un fichier puis « Download raw file »
+  (ou « Code » > « Download ZIP » pour tout le depot).
+- **Le texte n'est pas reconnu ?** Le journal de l'execution indique, pour chaque RP, comment le texte a ete lu. Si une ligne
+  dit « texte du message non reconnu, lecture de repli », elle est suivie du plan du premier message concerne (balises et
+  classes, jamais de texte) : ajoutez le bon selecteur dans `BODY_SELECTORS` en haut de `scripts/export_archives.py`
+  (comme `COLOR_SELECTORS` dans `sync.py`). Sans cela, le texte est quand meme lu, mais peut contenir des elements du profil.
+- En local : `python scripts/export_archives.py` (avec `FORUM_USER` / `FORUM_PASSWORD` dans l'environnement). Options :
+  `--only 176`, `--force`, `--max-chars`, `--dry-run` (liste les RP concernes sans rien lire).
+- **Confidentialite** : ces fichiers contiennent le texte de sujets prives, comme `data/forum.json` : le depot doit rester PRIVE.
+  Seul `docs/` est publie. Le journal de l'execution n'affiche jamais de titre, de pseudo ni de texte.
 
 ## Lancer la synchro
 Onglet Actions > « Synchronisation du forum » > Run workflow.
