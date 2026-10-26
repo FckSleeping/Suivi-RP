@@ -512,7 +512,6 @@
       h("div", { class: "filters" },
         btn("Ajouter un RP terminé", () => topicDialog(null, { archived: true }), "btn-primary", "plus"),
         btn("Créer une ship", newShipDialog, "", "users"),
-        h("span", { class: "sub" }, "Dans chaque bloc, du plus ancien au plus récent (date du dernier message).")),
     ];
     if (!ships.length) {
       out.push(section("Aucun RP archivé", empty("Archivez un RP depuis le tableau de bord (icône d’archive), ou ajoutez ici un RP déjà terminé : ils seront classés par ship. Vous pouvez aussi créer une ship à l’avance.")));
