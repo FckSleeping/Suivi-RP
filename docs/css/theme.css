@@ -249,7 +249,7 @@ select.field-input { cursor: pointer; }
 .cell-link a:hover { text-decoration: underline; }
 .cell-nsfw { text-align: center; color: #e0527a; font-size: 1.1rem; font-family: system-ui;}
 td.cell-nsfw:not(:empty) { background: rgba(255, 120, 160, 0.16); }
-.note { font-size: 0.85rem; color: var(--muted); text-align: justify; margin-top: 0.2rem; }
+.note { font-size: 0.85rem; color: var(--muted); text-align: justify; margin-top: 0.2rem; font-style: italic;}
 
 /* ---------- Fenetres de dialogue ---------- */
 .dialog { border: 1px solid var(--glass-border); border-radius: calc(var(--radius) + 4px); background: var(--glass-strong); color: var(--text); padding: calc(var(--space) * 1.6); box-shadow: 0 30px 80px rgba(40, 30, 100, 0.3), var(--specular); }
@@ -423,3 +423,5 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .trope-state[data-state="used"] { background-color: var(--trope-used-bg); color: var(--trope-used-text); }
 .trope-state[data-state="waiting"] { background-color: var(--trope-waiting-bg); color: var(--trope-waiting-text); }
 .trope-state option { color: var(--text); background: var(--bg); }
+
+.ship-card .item-meta{display: none;}
