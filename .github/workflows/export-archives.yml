@@ -1,0 +1,57 @@
+name: Export des archives (textes)
+
+# A lancer a la main (onglet Actions > « Export des archives (textes) » > Run workflow).
+# Lit chaque RP archive du debut a la fin et ecrit un fichier texte par RP dans data/textes_archives/.
+# Les RP deja exportes ne sont pas relus (sauf case « force » cochee).
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Numero d'un seul sujet (facultatif, ex. 176)"
+        required: false
+        default: ""
+      force:
+        description: "Refaire aussi les RP deja exportes"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# Meme groupe que la synchro : jamais les deux en meme temps (sinon conflit au moment d'enregistrer)
+concurrency:
+  group: synchro
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Exporter
+        env:
+          FORUM_USER: ${{ secrets.FORUM_USER }}
+          FORUM_PASSWORD: ${{ secrets.FORUM_PASSWORD }}
+          ONLY: ${{ inputs.only }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          args=""
+          [ -n "$ONLY" ] && args="$args --only $ONLY"
+          [ "$FORCE" = "true" ] && args="$args --force"
+          python scripts/export_archives.py $args
+      # « always » : si l'export est interrompu (delai depasse), les RP deja lus sont quand meme enregistres
+      - name: Enregistrer les textes
+        if: always()
+        run: |
+          git config user.name "synchro-rp"
+          git config user.email "synchro-rp@users.noreply.github.com"
+          git add -A data/textes_archives
+          git diff --cached --quiet && exit 0
+          git commit -m "Export des textes des archives"
+          git pull --rebase
+          git push
