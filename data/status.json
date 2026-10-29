@@ -1,10 +1,15 @@
 {
  "archived_read": 0,
- "errors": [],
- "last_run": "2026-10-29T17:31:03Z",
- "ok": true,
+ "errors": [
+  {
+   "what": "RuntimeError: http_504",
+   "where": "t217"
+  }
+ ],
+ "last_run": "2026-10-29T18:02:22Z",
+ "ok": false,
  "schema": 2,
- "topics_read": 20,
+ "topics_read": 19,
  "topics_total": 55,
  "topics_with_new_reply": 0
 }
