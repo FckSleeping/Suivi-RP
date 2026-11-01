@@ -425,3 +425,175 @@ td.cell-actions .btn { margin-left: 0.25rem; }
 .trope-state option { color: var(--text); background: var(--bg); }
 
 .ship-card .item-meta{display: none;}
+
+/* ==========================================================================
+   ANIMATIONS « LIQUID GLASS » - bloc ajoute a la fin, rien au-dessus n'est modifie.
+   Reglages rapides dans le :root juste en dessous. Tout se coupe automatiquement
+   si l'ordinateur demande « moins d'animations » (reglage d'accessibilite).
+   L'animation d'entree de page et le reflet sous la souris viennent de js/effects.js.
+   ========================================================================== */
+:root {
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);     /* petit rebond, facon iOS */
+  --spring-soft: cubic-bezier(0.22, 1.25, 0.36, 1);
+  --fx-enter-time: 0.55s;                           /* duree de l'apparition des elements */
+  --fx-stagger: 45ms;                               /* decalage entre deux elements qui apparaissent */
+  --fx-row-stagger: 22ms;                           /* decalage entre deux lignes de tableau */
+  --fx-glow: rgba(255, 255, 255, 0.55);             /* reflet qui suit la souris */
+  --fx-glow-size: 9rem;
+  --fx-sheen: rgba(255, 255, 255, 0.6);             /* trait de lumiere qui traverse les boutons */
+  --fx-ambient: running;                            /* fond qui ondule doucement ; « paused » pour le figer */
+  --fx-ambient-time: 46s;
+}
+:root[data-theme="dark"] {
+  --fx-glow: rgba(255, 255, 255, 0.12);
+  --fx-sheen: rgba(255, 255, 255, 0.22);
+}
+
+/* ---------- Fond vivant : deux reflets colores qui derivent tres lentement ---------- */
+body::before {
+  content: ""; position: fixed; inset: -25%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(28rem 22rem at 30% 35%, var(--blob-3), transparent 70%),
+    radial-gradient(26rem 20rem at 70% 65%, var(--blob-1), transparent 70%);
+  opacity: 0.55;
+  animation: fx-drift var(--fx-ambient-time) ease-in-out infinite alternate;
+  animation-play-state: var(--fx-ambient);
+}
+@keyframes fx-drift {
+  0%   { transform: translate3d(-6%, -4%, 0) rotate(0deg) scale(1); }
+  50%  { transform: translate3d(5%, 3%, 0) rotate(8deg) scale(1.08); }
+  100% { transform: translate3d(-2%, 6%, 0) rotate(-6deg) scale(0.96); }
+}
+
+/* ---------- Reflet qui suit la souris (verre qui « attrape » la lumiere) ---------- */
+.btn, .tile, .icon-link, .card { position: relative; isolation: isolate; }
+.app-header { isolation: isolate; }
+.btn::after, .tile::after, .icon-link::after, .card::after, .app-header::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(var(--fx-glow-size) circle at var(--mx, 50%) var(--my, 0%), var(--fx-glow), transparent 70%);
+  opacity: 0; transition: opacity 0.35s var(--ease);
+}
+.card::after, .app-header::after { --fx-glow-size: 22rem; }
+.card::after { --fx-glow: rgba(255, 255, 255, 0.32); }
+:root[data-theme="dark"] .card::after { --fx-glow: rgba(255, 255, 255, 0.06); }
+.btn:hover::after, .tile:hover::after, .icon-link:hover::after, .card:hover::after, .app-header:hover::after { opacity: 1; }
+.btn-primary::after { --fx-glow: rgba(255, 255, 255, 0.4); }
+
+/* ---------- Boutons : rebond, trait de lumiere au survol, enfoncement « liquide » ---------- */
+.btn { overflow: hidden; transition: transform 0.45s var(--spring), background var(--transition), box-shadow var(--transition), filter var(--transition); }
+.btn::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, transparent, var(--fx-sheen), transparent);
+  transform: skewX(-18deg) translateX(0); opacity: 0;
+}
+.btn:hover::before { animation: fx-sheen 0.9s var(--ease); }
+@keyframes fx-sheen { 0% { opacity: 0; transform: skewX(-18deg) translateX(0); } 25% { opacity: 1; } 100% { opacity: 0; transform: skewX(-18deg) translateX(420%); } }
+.btn:hover { transform: translateY(-2px) scale(1.02); }
+.btn:active { transform: scale(0.94); transition-duration: 0.12s; }
+.btn-icon:hover { transform: translateY(-1px) scale(1.08); }
+.btn-icon:hover .icon { animation: fx-wiggle 0.5s var(--spring); }
+.btn-icon.btn-danger:hover .icon { animation: fx-shake 0.45s ease-in-out; }
+@keyframes fx-wiggle { 0% { transform: rotate(0); } 35% { transform: rotate(-12deg) scale(1.1); } 70% { transform: rotate(6deg); } 100% { transform: rotate(0); } }
+@keyframes fx-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px) rotate(-6deg); } 75% { transform: translateX(2px) rotate(6deg); } }
+.btn .icon { transition: transform 0.4s var(--spring); }
+.btn:not(.btn-icon):hover .icon { transform: scale(1.12) rotate(-8deg); }
+
+/* ---------- Menu : l'onglet actif se gonfle comme une goutte ---------- */
+.nav-link { transition: background var(--transition), box-shadow var(--transition), color var(--transition), transform 0.4s var(--spring); }
+.nav-link:hover { transform: translateY(-1px); }
+.nav-link:active { transform: scale(0.93); transition-duration: 0.1s; }
+.nav-link .icon { transition: transform 0.45s var(--spring); }
+.nav-link:hover .icon { transform: scale(1.15) rotate(-6deg); }
+.fx-enter .nav-link.active { animation: fx-blob 0.6s var(--spring); }
+@keyframes fx-blob { 0% { transform: scale(0.82, 0.9); } 55% { transform: scale(1.06, 0.97); } 100% { transform: none; } }
+
+/* ---------- Voyant de connexion qui « respire » ---------- */
+.conn-on::before { display: inline-block; animation: fx-breathe 2.8s ease-in-out infinite; }
+@keyframes fx-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
+
+/* ---------- Pastilles et compteurs ---------- */
+.tile { transition: transform 0.5s var(--spring), background var(--transition), box-shadow var(--transition); }
+.tile-static:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(70, 60, 140, 0.16), var(--specular); }
+.pill, .ship-pill { transition: transform 0.4s var(--spring), box-shadow var(--transition), filter var(--transition); }
+tr:hover .pill:not(.pill-empty), tr:hover .ship-pill { transform: translateY(-1px) scale(1.03); filter: saturate(1.12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 6px 14px rgba(40, 30, 90, 0.2); }
+.pill-turn, .ship-pill { background-size: 180% 100%; animation: fx-flow 7s ease-in-out infinite alternate; }
+@keyframes fx-flow { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+.badge.new { background-size: 200% 100%; animation: glow 2.6s ease-in-out infinite, fx-flow 3s ease-in-out infinite alternate; }
+.cell-nsfw:not(:empty) { transition: color var(--transition); }
+tr:hover .cell-nsfw:not(:empty) { animation: fx-heartbeat 1.1s ease-in-out infinite; }
+@keyframes fx-heartbeat { 0%, 40%, 100% { text-shadow: none; transform: scale(1); } 15% { transform: scale(1.25); text-shadow: 0 0 10px rgba(224, 82, 122, 0.55); } 28% { transform: scale(1.08); } }
+
+/* ---------- Lignes de tableau : le survol glisse en douceur ---------- */
+.table tbody tr { transition: background 0.3s var(--ease), box-shadow 0.3s var(--ease); }
+.table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--accent-soft); }
+.table tbody tr.row-new:hover td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.icon-link { transition: transform 0.4s var(--spring), background var(--transition); }
+.icon-link:hover { transform: translateY(-2px) scale(1.1) rotate(-8deg); }
+.th-btn { transition: color var(--transition); }
+.th-btn:hover { color: var(--accent); }
+
+/* ---------- Champs : la mise au point s'allume avec un petit rebond ---------- */
+.field-input { transition: box-shadow 0.35s var(--spring), background var(--transition), transform 0.35s var(--spring); }
+.field-input:focus { transform: translateY(-1px); }
+.trope-state { transition: background-color var(--transition), box-shadow var(--transition), transform 0.35s var(--spring); }
+.trope-state:hover { transform: translateY(-1px); }
+
+/* ---------- Fenetres : ouverture « goutte » et voile qui se depose ---------- */
+.dialog[open] { animation: fx-dialog 0.5s var(--spring-soft); }
+.dialog[open]::backdrop { animation: fx-veil 0.35s var(--ease); }
+@keyframes fx-dialog { 0% { opacity: 0; transform: translateY(18px) scale(0.92, 0.88); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes fx-veil { from { opacity: 0; } to { opacity: 1; } }
+.picker-pop:not(.picker-inline) { animation: fx-dialog 0.38s var(--spring-soft); transform-origin: top left; }
+
+/* ---------- Barre d'enregistrement : remonte du bas avec un rebond ---------- */
+.save-bar:not([hidden]) { animation: fx-toast 0.55s var(--spring); }
+@keyframes fx-toast { from { opacity: 0; transform: translate(-50%, 140%) scale(0.9); } to { opacity: 1; transform: translateX(-50%); } }
+
+/* ---------- Archives : banniere et gifs ---------- */
+.ship-banner { transition: transform 6s var(--ease), filter 0.6s var(--ease); }
+.ship-card:hover .ship-banner { transform: scale(1.04); filter: opacity(0.5) saturate(1.6); }
+.ship-gif { transition: transform 0.45s var(--spring), box-shadow var(--transition); }
+.ship-gif:hover { transform: translateY(-3px) rotate(-4deg) scale(1.08); box-shadow: 0 10px 22px rgba(40, 30, 90, 0.28); }
+.ship-gif + .ship-gif:hover { transform: translateY(-3px) rotate(4deg) scale(1.08); }
+
+/* ---------- Entree de page (quand on change d'onglet) ---------- */
+@keyframes fx-rise { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes fx-pop { 0% { opacity: 0; transform: translateY(10px) scale(0.9); } 100% { opacity: 1; transform: none; } }
+@keyframes fx-row { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fx-enter .card, .fx-enter .table-wrap, .fx-enter .filters > *, .fx-enter .notice {
+  animation: fx-rise var(--fx-enter-time) var(--spring-soft) both;
+}
+.fx-enter .tile { animation: fx-pop var(--fx-enter-time) var(--spring) both; }
+.fx-enter .tile:nth-child(2) { animation-delay: calc(var(--fx-stagger) * 1); }
+.fx-enter .tile:nth-child(3) { animation-delay: calc(var(--fx-stagger) * 2); }
+.fx-enter .tile:nth-child(4) { animation-delay: calc(var(--fx-stagger) * 3); }
+.fx-enter .filters > * { animation-delay: calc(var(--fx-stagger) * 2); }
+.fx-enter .table-wrap { animation-delay: calc(var(--fx-stagger) * 3); }
+.fx-enter #app > .card:nth-child(2), .fx-enter #app > * > .card:nth-child(2) { animation-delay: calc(var(--fx-stagger) * 1); }
+.fx-enter #app > .card:nth-child(3), .fx-enter #app > * > .card:nth-child(3) { animation-delay: calc(var(--fx-stagger) * 2); }
+.fx-enter #app > .card:nth-child(4), .fx-enter #app > * > .card:nth-child(4) { animation-delay: calc(var(--fx-stagger) * 3); }
+.fx-enter #app > .card:nth-child(n+5), .fx-enter #app > * > .card:nth-child(n+5) { animation-delay: calc(var(--fx-stagger) * 4); }
+.fx-enter .table tbody tr { animation: fx-row 0.45s var(--ease) both; animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 16); }
+.fx-enter .table tbody tr:nth-child(1)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 1); }
+.fx-enter .table tbody tr:nth-child(2)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 2); }
+.fx-enter .table tbody tr:nth-child(3)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 3); }
+.fx-enter .table tbody tr:nth-child(4)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 4); }
+.fx-enter .table tbody tr:nth-child(5)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 5); }
+.fx-enter .table tbody tr:nth-child(6)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 6); }
+.fx-enter .table tbody tr:nth-child(7)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 7); }
+.fx-enter .table tbody tr:nth-child(8)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 8); }
+.fx-enter .table tbody tr:nth-child(9)  { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 9); }
+.fx-enter .table tbody tr:nth-child(10) { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 10); }
+.fx-enter .table tbody tr:nth-child(11) { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 11); }
+.fx-enter .table tbody tr:nth-child(12) { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 12); }
+.fx-enter .table tbody tr:nth-child(13) { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 13); }
+.fx-enter .table tbody tr:nth-child(14) { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 14); }
+.fx-enter .table tbody tr:nth-child(15) { animation-delay: calc(var(--fx-stagger) * 3 + var(--fx-row-stagger) * 15); }
+.fx-enter .card .table-wrap { animation: none; } /* deja anime avec sa carte */
+.fx-enter .card .card { animation: none; }
+
+/* ---------- Moins d'animations demande par l'ordinateur : on coupe tout ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
+  body::before { display: none; }
+}
