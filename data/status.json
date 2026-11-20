@@ -1,10 +1,15 @@
 {
  "archived_read": 0,
- "errors": [],
- "last_run": "2026-11-20T21:01:16Z",
- "ok": true,
+ "errors": [
+  {
+   "what": "ReadTimeout: HTTPSConnectionPool(host='sweeter-weather.forumactif.com', port=443): Read timed out. (read timeout=30)",
+   "where": "t205"
+  }
+ ],
+ "last_run": "2026-11-20T22:31:38Z",
+ "ok": false,
  "schema": 2,
- "topics_read": 20,
+ "topics_read": 19,
  "topics_total": 55,
  "topics_with_new_reply": 0
 }
