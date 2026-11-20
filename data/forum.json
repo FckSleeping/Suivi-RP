@@ -114,7 +114,7 @@
     "date": "2026-06-21T23:26",
     "post_id": "1651"
    },
-   "last_read": "2026-11-20T20:02:16Z",
+   "last_read": "2026-11-20T20:32:09Z",
    "path": "/t156-louder-than-bombs-asmodee",
    "post_count": 12
   },
@@ -220,22 +220,23 @@
    },
    "first_seen": "2026-10-17T11:01:01Z",
    "flags": [],
-   "last_changed": "2026-11-16T21:01:28Z",
+   "last_changed": "2026-11-20T20:32:13Z",
    "last_page_path": "/t176p15-blinding-light-x-fleur",
-   "last_player": "chatondelalune",
+   "last_player": "fcksleeping",
    "last_post": {
     "author": {
-     "group": "3",
-     "name": "Charleen Roy",
-     "uid": "143"
+     "group": "4",
+     "name": "F. Miranda Dagrès",
+     "uid": "142"
     },
-    "date": "2026-11-16T21:34",
-    "post_id": "2210"
+    "date": "2026-11-20T21:29",
+    "post_id": "2211"
    },
-   "last_read": "2026-11-20T20:02:20Z",
+   "last_read": "2026-11-20T20:32:13Z",
+   "new_reply": true,
    "path": "/t176-blinding-light-x-fleur",
-   "post_count": 25,
-   "previous_last_post_id": "2205"
+   "post_count": 26,
+   "previous_last_post_id": "2210"
   },
   "182": {
    "authors": [
@@ -299,13 +300,7 @@
     "post_id": "1495"
    },
    "first_seen": "2026-10-17T11:01:01Z",
-   "flags": [
-    "erreur_lecture"
-   ],
-   "last_error": {
-    "at": "2026-11-20T20:02:59Z",
-    "what": "RuntimeError: http_504"
-   },
+   "flags": [],
    "last_page_path": "/t183-sweet-dreams-made-of-lies-janko",
    "last_player": "fcksleeping",
    "last_post": {
@@ -317,7 +312,7 @@
     "date": "2026-10-07T22:36",
     "post_id": "2131"
    },
-   "last_read": "2026-11-20T19:32:53Z",
+   "last_read": "2026-11-20T20:32:34Z",
    "path": "/t183-sweet-dreams-made-of-lies-janko",
    "post_count": 5
   },
@@ -344,7 +339,13 @@
     "post_id": "1496"
    },
    "first_seen": "2026-10-17T11:01:01Z",
-   "flags": [],
+   "flags": [
+    "erreur_lecture"
+   ],
+   "last_error": {
+    "at": "2026-11-20T20:32:31Z",
+    "what": "RuntimeError: http_504"
+   },
    "last_page_path": "/t184-skull-crack-maiween",
    "last_player": "fcksleeping",
    "last_post": {
@@ -383,14 +384,8 @@
     "post_id": "1497"
    },
    "first_seen": "2026-10-17T11:01:01Z",
-   "flags": [
-    "erreur_lecture"
-   ],
+   "flags": [],
    "last_changed": "2026-10-28T22:31:09Z",
-   "last_error": {
-    "at": "2026-11-20T20:02:50Z",
-    "what": "ReadTimeout: HTTPSConnectionPool(host='sweeter-weather.forumactif.com', port=443): Read timed out. (read timeout=30)"
-   },
    "last_page_path": "/t185-never-ending-violence-x-wade",
    "last_player": "chatondelalune",
    "last_post": {
@@ -402,7 +397,7 @@
     "date": "2026-10-28T23:20",
     "post_id": "2199"
    },
-   "last_read": "2026-11-20T19:32:47Z",
+   "last_read": "2026-11-20T20:32:25Z",
    "path": "/t185-never-ending-violence-x-wade",
    "post_count": 7,
    "previous_last_post_id": "2136"
@@ -598,7 +593,7 @@
     "date": "2026-06-21T23:40",
     "post_id": "1658"
    },
-   "last_read": "2026-11-20T20:03:13Z",
+   "last_read": "2026-11-20T20:32:49Z",
    "path": "/t195-romantic-homicide",
    "post_count": 7
   },
@@ -625,14 +620,8 @@
     "post_id": "1565"
    },
    "first_seen": "2026-10-17T11:01:01Z",
-   "flags": [
-    "erreur_lecture"
-   ],
+   "flags": [],
    "last_changed": "2026-10-24T20:31:17Z",
-   "last_error": {
-    "at": "2026-11-20T20:03:05Z",
-    "what": "RuntimeError: http_504"
-   },
    "last_page_path": "/t196-pretty-distraction-kavish",
    "last_player": "fcksleeping",
    "last_post": {
@@ -644,7 +633,7 @@
     "date": "2026-10-24T22:18",
     "post_id": "2189"
    },
-   "last_read": "2026-11-20T19:32:54Z",
+   "last_read": "2026-11-20T20:32:41Z",
    "path": "/t196-pretty-distraction-kavish",
    "post_count": 5,
    "previous_last_post_id": "1657"
@@ -685,7 +674,7 @@
     "date": "2026-11-04T19:26",
     "post_id": "2207"
    },
-   "last_read": "2026-11-20T20:02:14Z",
+   "last_read": "2026-11-20T20:32:04Z",
    "path": "/t197-nightmares-on-repeat-lupo",
    "post_count": 15,
    "previous_last_post_id": "2193"
@@ -765,7 +754,7 @@
     "date": "2026-10-25T22:42",
     "post_id": "2196"
    },
-   "last_read": "2026-11-20T20:03:15Z",
+   "last_read": "2026-11-20T20:32:59Z",
    "path": "/t203-same-old-love-belial",
    "post_count": 8,
    "previous_last_post_id": "2172"
@@ -805,7 +794,7 @@
     "date": "2026-06-21T23:49",
     "post_id": "1660"
    },
-   "last_read": "2026-11-20T20:03:21Z",
+   "last_read": "2026-11-20T20:33:03Z",
    "path": "/t204-telling-fairy-tales-milton",
    "post_count": 2
   },
@@ -845,7 +834,7 @@
     "date": "2026-10-18T00:29",
     "post_id": "2161"
    },
-   "last_read": "2026-11-20T20:01:39Z",
+   "last_read": "2026-11-20T20:31:41Z",
    "path": "/t205-the-way-you-bleed-thetis",
    "post_count": 8,
    "previous_last_post_id": "2138"
@@ -925,7 +914,7 @@
     "date": "2026-10-28T18:16",
     "post_id": "2197"
    },
-   "last_read": "2026-11-20T20:03:29Z",
+   "last_read": "2026-11-20T20:33:05Z",
    "path": "/t208-le-monde-par-sa-fenetre-elowen",
    "post_count": 59,
    "previous_last_post_id": "2192"
@@ -1044,7 +1033,7 @@
     "date": "2026-11-08T01:57",
     "post_id": "2208"
    },
-   "last_read": "2026-11-20T20:03:35Z",
+   "last_read": "2026-11-20T20:33:27Z",
    "path": "/t214-running-through-you-noel",
    "post_count": 7,
    "previous_last_post_id": "2191"
@@ -1085,7 +1074,7 @@
     "date": "2026-11-12T15:57",
     "post_id": "2209"
    },
-   "last_read": "2026-11-20T20:03:29Z",
+   "last_read": "2026-11-20T20:33:25Z",
    "path": "/t215-seven-minutes-x-spindle",
    "post_count": 19,
    "previous_last_post_id": "2206"
@@ -1113,7 +1102,13 @@
     "post_id": "2112"
    },
    "first_seen": "2026-10-17T11:01:01Z",
-   "flags": [],
+   "flags": [
+    "erreur_lecture"
+   ],
+   "last_error": {
+    "at": "2026-11-20T20:32:09Z",
+    "what": "RuntimeError: http_502"
+   },
    "last_page_path": "/t216-take-my-hand-cody",
    "last_player": "fcksleeping",
    "last_post": {
@@ -1165,7 +1160,7 @@
     "date": "2026-10-18T15:39",
     "post_id": "2162"
    },
-   "last_read": "2026-11-20T20:01:34Z",
+   "last_read": "2026-11-20T20:31:17Z",
    "path": "/t217-let-s-fall-in-love-for-the-night-helios",
    "post_count": 7,
    "previous_last_post_id": "2158"
@@ -1478,7 +1473,7 @@
     "date": "2026-06-21T23:13",
     "post_id": "1646"
    },
-   "last_read": "2026-11-20T20:01:38Z",
+   "last_read": "2026-11-20T20:31:37Z",
    "path": "/t30-eternally-yours-narcisse",
    "post_count": 12
   },
@@ -1989,7 +1984,7 @@
     "date": "2026-10-24T18:22",
     "post_id": "2188"
    },
-   "last_read": "2026-11-20T20:01:52Z",
+   "last_read": "2026-11-20T20:31:48Z",
    "path": "/t44-how-you-like-that-jewell-18",
    "post_count": 24,
    "previous_last_post_id": "1649"
@@ -2068,7 +2063,7 @@
     "date": "2026-10-08T23:15",
     "post_id": "2133"
    },
-   "last_read": "2026-11-20T20:01:31Z",
+   "last_read": "2026-11-20T20:31:16Z",
    "path": "/t86-hell-of-a-good-time-felicy",
    "post_count": 31
   },
@@ -2146,7 +2141,7 @@
     "date": "2026-10-11T18:16",
     "post_id": "2139"
    },
-   "last_read": "2026-11-20T20:01:49Z",
+   "last_read": "2026-11-20T20:31:42Z",
    "path": "/t93-meant-to-be-octavia",
    "post_count": 43
   },
