@@ -1,19 +1,10 @@
 {
  "archived_read": 0,
- "errors": [
-  {
-   "what": "ReadTimeout: HTTPSConnectionPool(host='sweeter-weather.forumactif.com', port=443): Read timed out. (read timeout=30)",
-   "where": "t217"
-  },
-  {
-   "what": "ReadTimeout: HTTPSConnectionPool(host='sweeter-weather.forumactif.com', port=443): Read timed out. (read timeout=30)",
-   "where": "t208"
-  }
- ],
- "last_run": "2026-11-24T22:01:23Z",
- "ok": false,
+ "errors": [],
+ "last_run": "2026-11-24T22:30:58Z",
+ "ok": true,
  "schema": 2,
- "topics_read": 18,
+ "topics_read": 20,
  "topics_total": 55,
  "topics_with_new_reply": 0
 }
